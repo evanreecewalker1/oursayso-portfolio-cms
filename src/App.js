@@ -10,7 +10,11 @@ import HybridMediaService from './services/hybridMediaService';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
-  console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION! Version: 2024-08-13-v6-HYBRID');
+  const buildTimestamp = new Date().toISOString();
+  console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
+  console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
+  console.log('🆔 VERSION: 2024-08-13-v6-HYBRID');
+  console.log('⏰ LOADED AT:', new Date().toLocaleString());
   const { user, logout } = useAuth();
   
   const [currentView, setCurrentView] = useState('dashboard');
