@@ -19,7 +19,21 @@ const CMSApp = () => {
   const [dragOverPage, setDragOverPage] = useState(null); // Track which page we're dragging over
 
   // Real portfolio data from oursayso-sales-ipad repository
-  const [projects, setProjects] = useState([
+  const [projects, setProjects] = useState(() => {
+    const savedProjects = localStorage.getItem('portfolio-cms-projects');
+    console.log('🔍 Loading projects from localStorage:', savedProjects ? 'Found saved data' : 'No saved data');
+    if (savedProjects) {
+      try {
+        const parsed = JSON.parse(savedProjects);
+        console.log('✅ Loaded', parsed.length, 'projects from localStorage');
+        console.log('✅ First project title:', parsed[0]?.title);
+        return parsed;
+      } catch (e) {
+        console.warn('Failed to parse saved projects, using defaults');
+      }
+    }
+    console.log('📝 Using hardcoded default projects');
+    return [
     {
       id: '1',
       title: 'Lovell Leadership Conferences',
@@ -380,14 +394,34 @@ const CMSApp = () => {
         status: 'draft'
       }
     }
-  ]);
+  ];
+  });
 
   // Page 2 projects - additional portfolio projects
-  const [page2Projects, setPage2Projects] = useState([]);
+  const [page2Projects, setPage2Projects] = useState(() => {
+    const savedPage2Projects = localStorage.getItem('portfolio-cms-page2-projects');
+    if (savedPage2Projects) {
+      try {
+        return JSON.parse(savedPage2Projects);
+      } catch (e) {
+        console.warn('Failed to parse saved page 2 projects, using defaults');
+      }
+    }
+    return [];
+  });
 
   // Real client testimonials from portfolio
   // eslint-disable-next-line no-unused-vars
-  const [testimonials, setTestimonials] = useState([
+  const [testimonials, setTestimonials] = useState(() => {
+    const savedTestimonials = localStorage.getItem('portfolio-cms-testimonials');
+    if (savedTestimonials) {
+      try {
+        return JSON.parse(savedTestimonials);
+      } catch (e) {
+        console.warn('Failed to parse saved testimonials, using defaults');
+      }
+    }
+    return [
     {
       id: '1',
       text: 'Their work is memorable, relevant, entertaining, thought provoking, and above all highly effective.',
@@ -416,7 +450,8 @@ const CMSApp = () => {
       project: 'Lovell Leadership Conferences',
       date: '2024-01-30'
     }
-  ]);
+  ];
+  });
 
   // Project Editor State
   const [projectForm, setProjectForm] = useState({
@@ -469,14 +504,22 @@ const CMSApp = () => {
   const tileVideoRef = useRef(null);
   const pageBackgroundRef = useRef(null);
   
-  // Debug effect to monitor project state changes
+  // Save projects to localStorage whenever they change
   useEffect(() => {
-    console.log('🔍 DEBUG: Projects state changed (page 1):', projects);
+    localStorage.setItem('portfolio-cms-projects', JSON.stringify(projects));
+    console.log('💾 Projects saved to localStorage:', projects.length, 'projects');
+    console.log('💾 First project title:', projects[0]?.title);
   }, [projects]);
   
   useEffect(() => {
-    console.log('🔍 DEBUG: Page2Projects state changed:', page2Projects);
+    localStorage.setItem('portfolio-cms-page2-projects', JSON.stringify(page2Projects));
+    console.log('💾 Page 2 projects saved to localStorage');
   }, [page2Projects]);
+
+  useEffect(() => {
+    localStorage.setItem('portfolio-cms-testimonials', JSON.stringify(testimonials));
+    console.log('💾 Testimonials saved to localStorage');
+  }, [testimonials]);
 
   const handleDragStart = (e, index, page = 1) => {
     console.log('🟢 Drag started for item at index:', index, 'from page', page);
