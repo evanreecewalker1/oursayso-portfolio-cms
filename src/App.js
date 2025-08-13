@@ -786,6 +786,13 @@ const CMSApp = () => {
       pageBackgroundFile: project.backgrounds?.page || project.pageBackgroundFile || null,
       mediaItems: project.mediaItems || []
     };
+
+    // Debug logging to understand the data structure
+    console.log('🔍 DEBUG: Page background loading:', {
+      'project.backgrounds?.page': project.backgrounds?.page,
+      'project.pageBackgroundFile': project.pageBackgroundFile,
+      'final pageBackgroundFile': formData.pageBackgroundFile
+    });
     
     console.log('🔍 DEBUG: Form data prepared for editing:', formData);
     setProjectForm(formData);

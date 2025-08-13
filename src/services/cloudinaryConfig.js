@@ -100,6 +100,17 @@ class CloudinaryService {
       if (options.tags) {
         paramsToSign.tags = Array.isArray(options.tags) ? options.tags.join(',') : options.tags;
       }
+
+      // Add resource type for proper handling
+      const isVideo = file.type.startsWith('video/');
+      if (isVideo) {
+        paramsToSign.resource_type = 'video';
+      }
+
+      // For large files, enable chunked upload
+      if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
+        paramsToSign.chunk_size = '6000000'; // 6MB chunks
+      }
       
       const signature = await this.generateSignature(paramsToSign, this.apiSecret);
       
@@ -123,6 +134,16 @@ class CloudinaryService {
         const tagsString = Array.isArray(options.tags) ? options.tags.join(',') : options.tags;
         formData.append('tags', tagsString);
       }
+
+      // Add resource type for proper handling
+      if (isVideo) {
+        formData.append('resource_type', 'video');
+      }
+
+      // For large files, enable chunked upload
+      if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
+        formData.append('chunk_size', '6000000'); // 6MB chunks
+      }
       
       console.log('🔍 Signed upload attempt:', {
         apiKey: this.apiKey,
@@ -132,8 +153,6 @@ class CloudinaryService {
         fileSize: file.size,
         fileType: file.type
       });
-      
-      const isVideo = file.type.startsWith('video/');
 
       const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
       
