@@ -787,6 +787,12 @@ const CMSApp = () => {
       mediaItems: project.mediaItems || []
     };
 
+    // Fix missing URL for page background files (generate the expected path)
+    if (formData.pageBackgroundFile && !formData.pageBackgroundFile.url && formData.pageBackgroundFile.name) {
+      formData.pageBackgroundFile.url = generateProjectFilePath(project.id, formData.pageBackgroundFile.name, 'pageBackground');
+      console.log('🔧 DEBUG: Generated URL for page background:', formData.pageBackgroundFile.url);
+    }
+
     // Debug logging to understand the data structure
     console.log('🔍 DEBUG: Page background loading:', {
       'project.backgrounds?.page': project.backgrounds?.page,

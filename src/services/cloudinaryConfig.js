@@ -107,9 +107,9 @@ class CloudinaryService {
         paramsToSign.resource_type = 'video';
       }
 
-      // For large files, enable chunked upload
+      // Add timeout parameter for large files
       if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
-        paramsToSign.chunk_size = '6000000'; // 6MB chunks
+        paramsToSign.timeout = '120'; // 120 second timeout
       }
       
       const signature = await this.generateSignature(paramsToSign, this.apiSecret);
@@ -140,9 +140,9 @@ class CloudinaryService {
         formData.append('resource_type', 'video');
       }
 
-      // For large files, enable chunked upload
+      // Add timeout parameter for large files
       if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
-        formData.append('chunk_size', '6000000'); // 6MB chunks
+        formData.append('timeout', '120'); // 120 second timeout
       }
       
       console.log('🔍 Signed upload attempt:', {
