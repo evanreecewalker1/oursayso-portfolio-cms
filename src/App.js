@@ -16,6 +16,34 @@ const CMSApp = () => {
   const [cacheVersion, setCacheVersion] = useState(Date.now());
   
   // Cache clearing function
+  // Handle manual Cloudinary URL input for large videos
+  const handleManualUrl = (url, type) => {
+    if (!url || !url.includes('cloudinary.com')) {
+      alert('Please enter a valid Cloudinary URL');
+      return;
+    }
+
+    const fileName = url.split('/').pop() || 'manual-upload';
+    const fileData = {
+      name: fileName,
+      url: url,
+      cloudinary: true,
+      cloudinaryId: url.split('/').pop()?.split('.')[0],
+      uploadedAt: new Date().toISOString(),
+      preview: url, // Use the URL as preview too
+      type: type.includes('Video') ? 'video/mp4' : 'image/jpeg'
+    };
+
+    if (type === 'tileVideo' || type === 'tileImage') {
+      updateFormObject({ tileBackgroundFile: fileData });
+    } else if (type === 'pageBackground') {
+      updateFormObject({ pageBackgroundFile: fileData });
+    }
+
+    setManualUrlInput('');
+    console.log('✅ Manual URL added:', url);
+  };
+
   const clearAppCache = () => {
     // Clear localStorage
     localStorage.removeItem('projects');
@@ -506,6 +534,7 @@ const CMSApp = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [manualUrlInput, setManualUrlInput] = useState('');
   const [showTestimonialModal, setShowTestimonialModal] = useState(false);
   const [editingTestimonial, setEditingTestimonial] = useState(null);
   const [testimonialForm, setTestimonialForm] = useState({
@@ -2439,6 +2468,30 @@ const CMSApp = () => {
                   {(errors.tileImage || errors.tileVideo) && (
                     <span className="error-text">{errors.tileImage || errors.tileVideo}</span>
                   )}
+                  
+                  {/* Manual URL Input for Large Files */}
+                  <div className="manual-url-section" style={{marginTop: '20px', padding: '15px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px'}}>
+                    <h4>Large File? Use Manual URL</h4>
+                    <p style={{fontSize: '14px', color: '#64748b', marginBottom: '10px'}}>
+                      For videos over 100MB, upload directly to Cloudinary and paste the URL here
+                    </p>
+                    <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                      <input
+                        type="text"
+                        placeholder="https://res.cloudinary.com/your-cloud/video/upload/..."
+                        value={manualUrlInput}
+                        onChange={(e) => setManualUrlInput(e.target.value)}
+                        style={{flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '4px'}}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleManualUrl(manualUrlInput, projectForm.tileBackgroundType === 'video' ? 'tileVideo' : 'tileImage')}
+                        style={{padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}}
+                      >
+                        Add URL
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
