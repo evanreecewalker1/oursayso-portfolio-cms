@@ -784,6 +784,11 @@ const CMSApp = () => {
       tileBackgroundType: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
       tileBackgroundFile: (() => {
         const tileBackground = project.backgrounds?.tile?.file || project.tileBackgroundFile;
+        console.log('🔍 DEBUG: Processing tile background:', {
+          hasTileBackground: !!tileBackground,
+          url: tileBackground?.url,
+          urlType: tileBackground?.url ? (tileBackground.url.startsWith('http') ? 'cloudinary' : 'local') : 'none'
+        });
         // If tile background exists but has a local file path (not Cloudinary URL), treat as null
         if (tileBackground && tileBackground.url && (tileBackground.url.startsWith('/images/') || tileBackground.url.startsWith('/videos/'))) {
           console.log('🔄 Ignoring invalid local tile background URL:', tileBackground.url);
@@ -793,6 +798,11 @@ const CMSApp = () => {
       })(),
       pageBackgroundFile: (() => {
         const pageBackground = project.backgrounds?.page || project.pageBackgroundFile;
+        console.log('🔍 DEBUG: Processing page background:', {
+          hasPageBackground: !!pageBackground,
+          url: pageBackground?.url,
+          urlType: pageBackground?.url ? (pageBackground.url.startsWith('http') ? 'cloudinary' : 'local') : 'none'
+        });
         // If page background exists but has a local file path (not Cloudinary URL), treat as null
         if (pageBackground && pageBackground.url && pageBackground.url.startsWith('/images/')) {
           console.log('🔄 Ignoring invalid local page background URL:', pageBackground.url);
