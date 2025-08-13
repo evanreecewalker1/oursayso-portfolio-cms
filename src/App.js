@@ -1373,6 +1373,11 @@ const CMSApp = () => {
     if (!config.netlifyWebhook) {
       throw new Error('Netlify webhook URL is required. Please configure in Settings.');
     }
+    
+    // Validate webhook URL format
+    if (!config.netlifyWebhook.startsWith('https://api.netlify.com/build_hooks/')) {
+      throw new Error('Invalid Netlify webhook URL format. It should start with: https://api.netlify.com/build_hooks/');
+    }
 
     // Step 1: Validate content
     setPublishProgress(prev => ({
@@ -1454,6 +1459,8 @@ const CMSApp = () => {
     }));
     
     try {
+      console.log('🌐 Triggering Netlify webhook:', config.netlifyWebhook);
+      
       const netlifyResponse = await fetch(config.netlifyWebhook, {
         method: 'POST',
         headers: {
@@ -1467,13 +1474,22 @@ const CMSApp = () => {
       });
 
       if (!netlifyResponse.ok) {
-        throw new Error(`Netlify webhook failed: ${netlifyResponse.status} ${netlifyResponse.statusText}`);
+        const errorText = await netlifyResponse.text().catch(() => 'No response body');
+        throw new Error(`Netlify webhook failed: ${netlifyResponse.status} ${netlifyResponse.statusText}. Response: ${errorText}`);
       }
 
       console.log('✅ Netlify deployment triggered successfully');
     } catch (error) {
       console.error('❌ Netlify deployment failed:', error);
-      throw new Error(`Failed to trigger Netlify deployment: ${error.message}`);
+      
+      // Provide more specific error messages
+      if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+        throw new Error('Failed to connect to Netlify webhook. Please check:\n1. Webhook URL is correct\n2. Internet connection\n3. Netlify webhook is active');
+      } else if (error.message.includes('CORS')) {
+        throw new Error('CORS error when calling Netlify webhook. This may be a browser security restriction.');
+      } else {
+        throw new Error(`Failed to trigger Netlify deployment: ${error.message}`);
+      }
     }
 
     // Step 5: Building portfolio site (monitoring)
