@@ -80,7 +80,11 @@ class CloudinaryService {
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        // Get the actual error response from Cloudinary
+        const errorText = await response.text();
+        console.error('❌ Cloudinary error response:', errorText);
+        console.error('❌ Response status:', response.status, response.statusText);
+        throw new Error(`Upload failed: ${response.status} ${response.statusText} - ${errorText}`);
       }
 
       const result = await response.json();
