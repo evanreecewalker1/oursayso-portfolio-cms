@@ -2325,6 +2325,11 @@ const CMSApp = () => {
                         </div>
                       ) : (
                         <>
+                          {console.log('🔍 DEBUG: Tile background working with:', {
+                            preview: projectForm.tileBackgroundFile.preview,
+                            url: projectForm.tileBackgroundFile.url,
+                            finalSrc: projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url
+                          })}
                           {projectForm.tileBackgroundType === 'image' ? (
                             <img 
                               src={projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url} 
@@ -2453,10 +2458,18 @@ const CMSApp = () => {
                         </div>
                       ) : (
                         <>
+                          {console.log('🔍 DEBUG: Page background img src:', projectForm.pageBackgroundFile.preview || projectForm.pageBackgroundFile.url)}
                           <img 
                             src={projectForm.pageBackgroundFile.preview || projectForm.pageBackgroundFile.url} 
                             alt="Current page background"
                             className="current-thumbnail"
+                            onLoad={() => console.log('✅ Page background image loaded successfully')}
+                            onError={(e) => console.log('❌ Page background image failed to load:', {
+                              src: e.target.src,
+                              error: e.type,
+                              naturalWidth: e.target.naturalWidth,
+                              naturalHeight: e.target.naturalHeight
+                            })}
                           />
                           <div className="current-file-info">
                             <span className="file-name">
