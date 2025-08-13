@@ -783,7 +783,15 @@ const CMSApp = () => {
       tags: project.tags || [],
       tileBackgroundType: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
       tileBackgroundFile: project.backgrounds?.tile?.file || project.tileBackgroundFile || null,
-      pageBackgroundFile: project.backgrounds?.page || project.pageBackgroundFile || null,
+      pageBackgroundFile: (() => {
+        const pageBackground = project.backgrounds?.page || project.pageBackgroundFile;
+        // If page background exists but has a local file path (not Cloudinary URL), treat as null
+        if (pageBackground && pageBackground.url && pageBackground.url.startsWith('/images/')) {
+          console.log('🔄 Ignoring invalid local page background URL:', pageBackground.url);
+          return null;
+        }
+        return pageBackground || null;
+      })(),
       mediaItems: project.mediaItems || []
     };
 
@@ -2412,12 +2420,6 @@ const CMSApp = () => {
                 {projectForm.pageBackgroundFile && (
                   <div className="current-file-preview">
                     <h4>Current Background:</h4>
-                    {console.log('🔍 DEBUG: Rendering page background preview with:', {
-                      name: projectForm.pageBackgroundFile.name,
-                      preview: projectForm.pageBackgroundFile.preview,
-                      url: projectForm.pageBackgroundFile.url,
-                      uploading: projectForm.pageBackgroundFile.uploading
-                    })}
                     <div className="current-file">
                       {projectForm.pageBackgroundFile.uploading ? (
                         <div className="upload-progress">
