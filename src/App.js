@@ -2420,20 +2420,50 @@ const CMSApp = () => {
                         <>
                           {projectForm.tileBackgroundType === 'image' ? (
                             <img 
-                              src={projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url} 
+                              src={(() => {
+                                let displayUrl;
+                                if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                  // For local files, get fresh display URL from hybrid service
+                                  displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.url;
+                                  console.log('🖼️ Local tile image display URL:', displayUrl);
+                                } else {
+                                  // For Cloudinary, use direct URL (never blob URLs for Cloudinary)
+                                  displayUrl = projectForm.tileBackgroundFile.url;
+                                  console.log('☁️ Cloudinary tile image display URL:', displayUrl);
+                                }
+                                
+                                // Defensive check: never render blob URLs that might be invalid
+                                if (displayUrl && displayUrl.startsWith('blob:')) {
+                                  console.warn('⚠️ Preventing display of potentially invalid blob URL:', displayUrl);
+                                  return projectForm.tileBackgroundFile.url || '/placeholder-image.png';
+                                }
+                                
+                                return displayUrl || '/placeholder-image.png';
+                              })()} 
                               alt="Current tile background"
                               className="current-thumbnail"
                             />
                           ) : (
                             <video 
                               src={(() => {
+                                let displayUrl;
                                 if (projectForm.tileBackgroundFile.storageType === 'local') {
                                   // For local files, get fresh display URL from hybrid service
-                                  return HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.preview;
+                                  displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
+                                  console.log('🎬 Local tile video display URL:', displayUrl);
                                 } else {
-                                  // For Cloudinary, use direct URL
-                                  return projectForm.tileBackgroundFile.url || projectForm.tileBackgroundFile.preview;
+                                  // For Cloudinary, use direct URL (never blob URLs for Cloudinary)
+                                  displayUrl = projectForm.tileBackgroundFile.url;
+                                  console.log('☁️ Cloudinary tile video display URL:', displayUrl);
                                 }
+                                
+                                // Defensive check: never render blob URLs that might be invalid
+                                if (displayUrl && displayUrl.startsWith('blob:')) {
+                                  console.warn('⚠️ Preventing display of potentially invalid blob URL for video:', displayUrl);
+                                  return null; // Return null to prevent video from loading
+                                }
+                                
+                                return displayUrl;
                               })()}
                               className="current-thumbnail"
                               muted
@@ -2573,7 +2603,15 @@ const CMSApp = () => {
                       ) : (
                         <>
                           <img 
-                            src={projectForm.pageBackgroundFile.preview || projectForm.pageBackgroundFile.url} 
+                            src={(() => {
+                              if (projectForm.pageBackgroundFile.storageType === 'local') {
+                                // For local files, get fresh display URL from hybrid service  
+                                return HybridMediaService.getDisplayUrl(projectForm.pageBackgroundFile) || projectForm.pageBackgroundFile.url;
+                              } else {
+                                // For Cloudinary, use direct URL
+                                return projectForm.pageBackgroundFile.url || projectForm.pageBackgroundFile.preview;
+                              }
+                            })()} 
                             alt="Current page background"
                             className="current-thumbnail"
                           />
@@ -2838,13 +2876,24 @@ const CMSApp = () => {
                         {projectForm.tileBackgroundFile && projectForm.tileBackgroundType === 'video' && (
                           <video 
                             src={(() => {
+                              let displayUrl;
                               if (projectForm.tileBackgroundFile.storageType === 'local') {
                                 // For local files, get fresh display URL from hybrid service
-                                return HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.preview;
+                                displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
+                                console.log('🎬 Local tile preview video display URL:', displayUrl);
                               } else {
-                                // For Cloudinary, use direct URL
-                                return projectForm.tileBackgroundFile.url || projectForm.tileBackgroundFile.preview;
+                                // For Cloudinary, use direct URL (never blob URLs for Cloudinary)
+                                displayUrl = projectForm.tileBackgroundFile.url;
+                                console.log('☁️ Cloudinary tile preview video display URL:', displayUrl);
                               }
+                              
+                              // Defensive check: never render blob URLs that might be invalid
+                              if (displayUrl && displayUrl.startsWith('blob:')) {
+                                console.warn('⚠️ Preventing display of potentially invalid blob URL for tile preview video:', displayUrl);
+                                return null; // Return null to prevent video from loading
+                              }
+                              
+                              return displayUrl;
                             })()}
                             autoPlay
                             loop

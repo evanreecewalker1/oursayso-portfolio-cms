@@ -132,7 +132,8 @@ class LocalFileManager {
           // Track the new blob URL
           this.blobUrls.set(localPath, freshBlobUrl);
           
-          console.log('📁 Created fresh blob URL for:', localPath);
+          console.log('📁 Created fresh blob URL for:', localPath, 'URL:', freshBlobUrl);
+          console.log('📁 Active blob URLs count:', this.blobUrls.size);
           return freshBlobUrl;
         } catch (error) {
           console.error('❌ Failed to create blob URL:', error);
@@ -263,7 +264,8 @@ class LocalFileManager {
       try {
         URL.revokeObjectURL(blobUrl);
         this.blobUrls.delete(localPath);
-        console.log('🧹 Revoked blob URL for:', localPath);
+        console.log('🧹 Revoked blob URL for:', localPath, 'URL:', blobUrl);
+        console.log('📁 Remaining blob URLs count:', this.blobUrls.size);
       } catch (error) {
         console.warn('⚠️ Failed to revoke blob URL:', error);
       }
