@@ -125,7 +125,7 @@ class HybridMediaService {
         uploadedAt: savedFile.uploadedAt,
         
         // Use appropriate URL for immediate preview
-        preview: savedFile.blobUrl || savedFile.dataUrl,
+        preview: savedFile.temporaryPreview || savedFile.dataUrl,
         file: file, // Keep reference to original file
         needsServerUpload: false // Already "saved" locally
       };
@@ -187,11 +187,38 @@ class HybridMediaService {
   // Get appropriate URL for display (handles both local and Cloudinary)
   getDisplayUrl(mediaItem) {
     if (mediaItem.storageType === 'local') {
-      // For local files, try to get the actual file URL from LocalFileManager
-      const fileUrl = LocalFileManager.getFileUrl(mediaItem.localPath);
-      return fileUrl || mediaItem.preview || mediaItem.url || mediaItem.localPath;
+      try {
+        // For local files, get fresh URL from LocalFileManager (creates new blob URL)
+        const fileUrl = LocalFileManager.getFileUrl(mediaItem.localPath);
+        return fileUrl || mediaItem.preview || mediaItem.url || mediaItem.localPath;
+      } catch (error) {
+        console.error('Failed to get display URL for local file:', error);
+        return mediaItem.preview || mediaItem.url || mediaItem.localPath;
+      }
     } else {
       return mediaItem.url;
+    }
+  }
+
+  // Clean up blob URLs for a project (garbage collection)
+  cleanupProjectBlobs(projectId) {
+    try {
+      // Get all project files and clean up their blob URLs
+      const projectFiles = LocalFileManager.getProjectFiles(projectId);
+      let cleanedCount = 0;
+      
+      projectFiles.forEach(fileData => {
+        if (fileData.path) {
+          LocalFileManager.revokeBlobUrl(fileData.path);
+          cleanedCount++;
+        }
+      });
+      
+      console.log(`🧹 Cleaned up ${cleanedCount} blob URLs for project ${projectId}`);
+      return cleanedCount;
+    } catch (error) {
+      console.error('Failed to cleanup project blobs:', error);
+      return 0;
     }
   }
 

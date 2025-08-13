@@ -80,7 +80,7 @@ class CloudinaryService {
       }
 
       // For large video files, try unsigned upload first to avoid CORS issues
-      const isVideo = file.type.startsWith('video/');
+      const isVideoType = file.type.startsWith('video/');
       const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB+
       
       if (isVideo && isLargeFile) {
@@ -116,8 +116,8 @@ class CloudinaryService {
       }
 
       // Add resource type for proper handling
-      const isVideo = file.type.startsWith('video/');
-      if (isVideo) {
+      const isVideoFile = file.type.startsWith('video/');
+      if (isVideoFile) {
         paramsToSign.resource_type = 'video';
       }
 
@@ -152,7 +152,7 @@ class CloudinaryService {
       }
 
       // Add resource type for proper handling
-      if (isVideo) {
+      if (isVideoType) {
         formData.append('resource_type', 'video');
       }
 
@@ -229,7 +229,7 @@ class CloudinaryService {
         formData.append('tags', tagsString);
       }
 
-      const isVideo = file.type.startsWith('video/');
+      const isVideoType = file.type.startsWith('video/');
       const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
       
       console.log('🔍 Unsigned upload attempt:', {

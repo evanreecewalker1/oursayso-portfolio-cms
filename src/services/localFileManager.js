@@ -4,6 +4,8 @@
 class LocalFileManager {
   constructor() {
     this.localFiles = new Map(); // In-memory storage for demo
+    this.fileReferences = new Map(); // In-memory file references
+    this.blobUrls = new Map(); // Track blob URLs for cleanup
     this.loadFromStorage();
   }
 
@@ -16,35 +18,37 @@ class LocalFileManager {
       localPath: localPath,
       lastModified: file.lastModified,
       uploadedAt: new Date().toISOString(),
-      // For large files, we'll use blob URLs instead of base64
-      blobUrl: null,
-      fileReference: null // Keep reference to original file object
+      storageMethod: null,
+      temporaryPreview: null // For immediate preview only
     };
 
-    // For large files (>5MB), use blob URL instead of base64 to avoid localStorage limits
+    // For large files (>5MB), store file reference and create temporary preview
     if (file.size > 5 * 1024 * 1024) {
-      console.log('📁 Large file detected - using blob URL storage:', this.formatFileSize(file.size));
+      console.log('📁 Large file detected - using file reference storage:', this.formatFileSize(file.size));
       
-      // Create persistent blob URL
-      fileData.blobUrl = URL.createObjectURL(file);
-      fileData.fileReference = file; // Keep file reference in memory
-      fileData.storageMethod = 'blob';
+      fileData.storageMethod = 'file-reference';
       
-      // Save only metadata to localStorage (not file data)
-      this.localFiles.set(localPath, {
-        ...fileData,
-        fileReference: null // Don't try to serialize file object
-      });
-      
-      // Store file reference separately in memory
-      this.fileReferences = this.fileReferences || new Map();
+      // Store file reference for permanent access
       this.fileReferences.set(localPath, file);
       
-      console.log('📁 Large file stored with blob URL:', {
+      // Create temporary blob URL for immediate preview only
+      const tempBlobUrl = URL.createObjectURL(file);
+      fileData.temporaryPreview = tempBlobUrl;
+      
+      // Track blob URL for cleanup
+      this.blobUrls.set(localPath, tempBlobUrl);
+      
+      // Save metadata to localStorage (no blob URL persisted)
+      this.localFiles.set(localPath, {
+        ...fileData,
+        temporaryPreview: null // Don't persist blob URLs
+      });
+      
+      console.log('📁 Large file stored with file reference:', {
         path: localPath,
         size: this.formatFileSize(file.size),
         type: file.type,
-        blobUrl: fileData.blobUrl
+        hasPreview: !!tempBlobUrl
       });
       
       return Promise.resolve(fileData);
@@ -82,12 +86,19 @@ class LocalFileManager {
     return this.localFiles.has(localPath);
   }
 
-  // Delete file
+  // Delete file and clean up resources
   deleteFile(localPath) {
+    // Clean up blob URL if exists
+    this.revokeBlobUrl(localPath);
+    
+    // Remove file reference
+    this.fileReferences.delete(localPath);
+    
+    // Remove from local files
     const existed = this.localFiles.delete(localPath);
     if (existed) {
       this.saveToStorage();
-      console.log('🗑️ File deleted:', localPath);
+      console.log('🗑️ File deleted and cleaned up:', localPath);
     }
     return existed;
   }
@@ -103,27 +114,38 @@ class LocalFileManager {
     return projectFiles;
   }
 
-  // Get file URL for display (handles both blob and base64)
+  // Get file URL for display (handles file references and base64)
   getFileUrl(localPath) {
     const file = this.getFile(localPath);
     if (!file) return null;
     
-    if (file.storageMethod === 'blob') {
-      // For large files, return blob URL or recreate if needed
-      if (file.blobUrl) {
-        return file.blobUrl;
-      } else if (this.fileReferences && this.fileReferences.has(localPath)) {
-        // Recreate blob URL if lost
-        const fileRef = this.fileReferences.get(localPath);
-        const newBlobUrl = URL.createObjectURL(fileRef);
-        file.blobUrl = newBlobUrl;
-        return newBlobUrl;
+    if (file.storageMethod === 'file-reference') {
+      // For large files, create fresh blob URL each time to avoid lifecycle issues
+      if (this.fileReferences && this.fileReferences.has(localPath)) {
+        try {
+          const fileRef = this.fileReferences.get(localPath);
+          const freshBlobUrl = URL.createObjectURL(fileRef);
+          
+          // Clean up any previous blob URL for this path
+          this.revokeBlobUrl(localPath);
+          
+          // Track the new blob URL
+          this.blobUrls.set(localPath, freshBlobUrl);
+          
+          console.log('📁 Created fresh blob URL for:', localPath);
+          return freshBlobUrl;
+        } catch (error) {
+          console.error('❌ Failed to create blob URL:', error);
+          return null;
+        }
       }
       return null;
-    } else {
+    } else if (file.storageMethod === 'base64') {
       // For small files, return base64 data URL
       return file.dataUrl;
     }
+    
+    return null;
   }
 
   // Clean up unused files (garbage collection)
@@ -234,12 +256,49 @@ class LocalFileManager {
     return exports;
   }
 
-  // Clear all files
+  // Revoke blob URL for specific path
+  revokeBlobUrl(localPath) {
+    if (this.blobUrls.has(localPath)) {
+      const blobUrl = this.blobUrls.get(localPath);
+      try {
+        URL.revokeObjectURL(blobUrl);
+        this.blobUrls.delete(localPath);
+        console.log('🧹 Revoked blob URL for:', localPath);
+      } catch (error) {
+        console.warn('⚠️ Failed to revoke blob URL:', error);
+      }
+    }
+  }
+
+  // Clean up all blob URLs
+  revokeAllBlobUrls() {
+    let revokedCount = 0;
+    for (const [path, blobUrl] of this.blobUrls.entries()) {
+      try {
+        URL.revokeObjectURL(blobUrl);
+        revokedCount++;
+      } catch (error) {
+        console.warn('⚠️ Failed to revoke blob URL for', path, ':', error);
+      }
+    }
+    this.blobUrls.clear();
+    console.log(`🧹 Revoked ${revokedCount} blob URLs`);
+    return revokedCount;
+  }
+
+  // Clear all files and clean up resources
   clearAll() {
     const count = this.localFiles.size;
+    
+    // Clean up all blob URLs
+    this.revokeAllBlobUrls();
+    
+    // Clear all data
     this.localFiles.clear();
+    this.fileReferences.clear();
     this.saveToStorage();
-    console.log(`🗑️ Cleared all ${count} local files`);
+    
+    console.log(`🗑️ Cleared all ${count} local files and cleaned up resources`);
     return count;
   }
 }

@@ -981,27 +981,27 @@ const CMSApp = () => {
       return newErrors;
     });
 
-    // Create blob URL safely and store it for cleanup
-    let blobUrl = null;
+    // Create temporary preview for immediate feedback
+    let tempPreview = null;
     try {
-      blobUrl = URL.createObjectURL(file);
+      // Only create blob URL for immediate preview, will be cleaned up quickly
+      tempPreview = URL.createObjectURL(file);
     } catch (blobError) {
-      console.warn('Failed to create blob URL, using placeholder:', blobError);
-      blobUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zZW0iPkxvYWRpbmc8L3RleHQ+PC9zdmc+';
+      console.warn('Failed to create temporary preview:', blobError);
+      tempPreview = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zZW0iPkxvYWRpbmc8L3RleHQ+PC9zdmc+';
     }
 
-    // Show loading state with safe blob URL
+    // Show loading state with temporary preview
     const loadingFile = {
       file,
-      preview: blobUrl,
+      preview: tempPreview,
       name: file.name,
       size: file.size,
       type: file.type,
       uploadedAt: new Date().toISOString(),
       uploading: true,
-      needsCleanup: blobUrl && blobUrl.startsWith('blob:') // Flag for cleanup
+      temporaryPreview: tempPreview && tempPreview.startsWith('blob:') ? tempPreview : null
     };
-    console.log('🔄 DEBUG: Setting loading file state:', loadingFile);
     updateFileInForm(type, loadingFile);
 
     try {
@@ -1067,19 +1067,27 @@ const CMSApp = () => {
         throw new Error(`Upload failed: ${uploadError.message || 'Unknown error'}`);
       }
 
-      // Clean up blob URL before creating final object
-      if (blobUrl && blobUrl.startsWith('blob:')) {
+      // Clean up temporary preview blob URL
+      if (tempPreview && tempPreview.startsWith('blob:')) {
         try {
-          URL.revokeObjectURL(blobUrl);
+          URL.revokeObjectURL(tempPreview);
         } catch (cleanupError) {
-          console.warn('Failed to cleanup blob URL:', cleanupError);
+          console.warn('Failed to cleanup temporary preview:', cleanupError);
         }
       }
 
       // Create final file object with hybrid storage data
       const finalFileData = {
         file,
-        preview: result.preview || result.url, // Use preview for local, URL for Cloudinary
+        preview: (() => {
+          if (result.storageType === 'local') {
+            // For local files, get fresh URL from hybrid service (manages blob lifecycle)
+            return HybridMediaService.getDisplayUrl(result) || result.preview || result.url;
+          } else {
+            // For Cloudinary, use direct URL
+            return result.url;
+          }
+        })(),
         name: file.name,
         size: result.bytes || file.size,
         type: file.type,
@@ -1093,8 +1101,7 @@ const CMSApp = () => {
         storageType: result.storageType || 'cloudinary', // 'cloudinary' or 'local'
         localPath: result.localPath || null,
         needsServerUpload: result.needsServerUpload || false,
-        cloudinary: result.storageType === 'cloudinary', // Legacy compatibility
-        needsCleanup: false // No cleanup needed for Cloudinary URLs
+        cloudinary: result.storageType === 'cloudinary' // Legacy compatibility
       };
 
       // Check dimensions for recommendations (for images)
@@ -1125,12 +1132,12 @@ const CMSApp = () => {
     } catch (error) {
       console.error(`❌ Failed to upload ${type}:`, error);
       
-      // Clean up blob URL on error
-      if (blobUrl && blobUrl.startsWith('blob:')) {
+      // Clean up temporary preview on error
+      if (tempPreview && tempPreview.startsWith('blob:')) {
         try {
-          URL.revokeObjectURL(blobUrl);
+          URL.revokeObjectURL(tempPreview);
         } catch (cleanupError) {
-          console.warn('Failed to cleanup blob URL on error:', cleanupError);
+          console.warn('Failed to cleanup temporary preview on error:', cleanupError);
         }
       }
       
@@ -1149,11 +1156,11 @@ const CMSApp = () => {
     console.log('🔄 DEBUG: updateFileInForm called with:', { type, fileWithPreview });
     
     if (type === 'tileImage' || type === 'tileVideo') {
-      // Clean up previous blob URL if exists
+      // Clean up previous temporary preview if exists
       const currentFile = projectForm.tileBackgroundFile;
-      if (currentFile && currentFile.needsCleanup && currentFile.preview && currentFile.preview.startsWith('blob:')) {
+      if (currentFile && currentFile.temporaryPreview && currentFile.temporaryPreview.startsWith('blob:')) {
         try {
-          URL.revokeObjectURL(currentFile.preview);
+          URL.revokeObjectURL(currentFile.temporaryPreview);
         } catch (cleanupError) {
           console.warn('Failed to cleanup previous blob URL:', cleanupError);
         }
