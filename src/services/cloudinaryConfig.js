@@ -48,6 +48,27 @@ class CloudinaryService {
     }
   }
 
+  // Generate signature for signed uploads using Web Crypto API
+  async generateSignature(paramsToSign, apiSecret) {
+    const sortedParams = Object.keys(paramsToSign)
+      .sort()
+      .map(key => `${key}=${paramsToSign[key]}`)
+      .join('&');
+    
+    const stringToSign = sortedParams + apiSecret;
+    console.log('🔍 String to sign:', stringToSign);
+    
+    // Use Web Crypto API for SHA-1 hash
+    const encoder = new TextEncoder();
+    const data = encoder.encode(stringToSign);
+    const hashBuffer = await crypto.subtle.digest('SHA-1', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    console.log('🔍 Generated signature:', signature.slice(0, 10) + '...');
+    return signature;
+  }
+
   // Upload media (images and videos) to Cloudinary
   async uploadMedia(file, options = {}) {
     try {
@@ -58,13 +79,25 @@ class CloudinaryService {
         throw new Error('Monthly bandwidth limit would be exceeded');
       }
 
-      // Ultra minimal upload - just file and preset
+      // Use signed upload since unsigned presets are not whitelisted
+      const timestamp = Math.round(new Date().getTime() / 1000);
+      
+      const paramsToSign = {
+        timestamp: timestamp
+      };
+      
+      const signature = await this.generateSignature(paramsToSign, this.apiSecret);
+      
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', this.uploadPreset);
+      formData.append('api_key', this.apiKey);
+      formData.append('timestamp', timestamp);
+      formData.append('signature', signature);
       
-      console.log('🔍 Minimal upload attempt:', {
-        uploadPreset: this.uploadPreset,
+      console.log('🔍 Signed upload attempt:', {
+        apiKey: this.apiKey,
+        timestamp: timestamp,
+        signature: signature.slice(0, 10) + '...',
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type
