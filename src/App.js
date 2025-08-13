@@ -915,7 +915,7 @@ const CMSApp = () => {
     }
 
     // Validate file size limits (increased for Cloudinary)
-    const sizeLimit = type.includes('Video') ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB for videos, 50MB for images
+    const sizeLimit = type.includes('Video') ? 150 * 1024 * 1024 : 50 * 1024 * 1024; // 150MB for videos, 50MB for images
     if (file.size > sizeLimit) {
       const limitMB = Math.round(sizeLimit / (1024 * 1024));
       setErrors(prev => ({

@@ -108,7 +108,9 @@ class CloudinaryService {
       }
 
       // Add timeout parameter for large files
-      if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
+      if (file.size > 150 * 1024 * 1024) { // Files larger than 150MB
+        paramsToSign.timeout = '180'; // 180 second timeout for very large files
+      } else if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
         paramsToSign.timeout = '120'; // 120 second timeout
       }
       
@@ -141,7 +143,9 @@ class CloudinaryService {
       }
 
       // Add timeout parameter for large files
-      if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
+      if (file.size > 150 * 1024 * 1024) { // Files larger than 150MB
+        formData.append('timeout', '180'); // 180 second timeout for very large files
+      } else if (file.size > 100 * 1024 * 1024) { // Files larger than 100MB
         formData.append('timeout', '120'); // 120 second timeout
       }
       

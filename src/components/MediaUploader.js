@@ -16,13 +16,13 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
     const validFiles = fileArray.filter(file => {
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
-      const isValidSize = file.size <= 100 * 1024 * 1024; // 100MB limit (Cloudinary REST API limit)
+      const isValidSize = file.size <= 150 * 1024 * 1024; // 150MB limit (increased for large video files)
       
       return (isImage || isVideo) && isValidSize;
     });
 
     if (validFiles.length !== fileArray.length) {
-      alert(`${fileArray.length - validFiles.length} files were rejected. Only images and videos under 100MB are allowed (Cloudinary limit).`);
+      alert(`${fileArray.length - validFiles.length} files were rejected. Only images and videos under 150MB are allowed.`);
     }
 
     if (validFiles.length + uploadQueue.length > maxFiles) {
@@ -253,7 +253,7 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
         
         <Upload size={48} className="upload-icon" />
         <h3>Drop files here or click to upload</h3>
-        <p>Support for images and videos up to 100MB (Cloudinary limit)</p>
+        <p>Support for images and videos up to 150MB</p>
         <p>Maximum {maxFiles} files</p>
       </div>
 
