@@ -3,6 +3,8 @@ import { Plus, Edit, Trash2, Menu, Settings, Eye, Upload, ChevronUp, ChevronDown
 import './App.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
+import MediaUploader from './components/MediaUploader';
+import BandwidthMonitor from './components/BandwidthMonitor';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
@@ -2271,6 +2273,39 @@ const CMSApp = () => {
                 <Plus size={16} />
                 Add Media Item
               </button>
+            </div>
+
+            {/* Cloudinary Media Upload */}
+            <div className="cloudinary-upload-section">
+              <h3>Upload Media to Cloudinary</h3>
+              <MediaUploader 
+                onUploadComplete={(result, item) => {
+                  // Add uploaded media to project
+                  const newMediaItem = {
+                    id: Date.now().toString(),
+                    type: item.file.type.startsWith('video/') ? 'video' : 'image',
+                    title: item.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+                    files: [{
+                      id: Date.now().toString(),
+                      name: item.name,
+                      type: item.file.type,
+                      url: result.url,
+                      cloudinaryId: result.publicId,
+                      size: result.bytes,
+                      uploadedAt: new Date().toISOString()
+                    }]
+                  };
+                  
+                  setProjectForm(prev => ({
+                    ...prev,
+                    mediaItems: [...prev.mediaItems, newMediaItem]
+                  }));
+                  
+                  console.log('✅ Media uploaded and added to project:', newMediaItem);
+                }}
+                maxFiles={5}
+                acceptedTypes="image/*,video/*"
+              />
             </div>
             
             <div className="media-items">

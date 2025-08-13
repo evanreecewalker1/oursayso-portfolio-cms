@@ -1871,3 +1871,27 @@ body {
   font-size: 0.75rem;
   font-weight: 500;
 }
+
+/* Cloudinary Integration Styles */
+.cloudinary-upload-section {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.cloudinary-upload-section h3 {
+  margin: 0 0 16px 0;
+  color: #333;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cloudinary-upload-section h3::before {
+  content: "☁️";
+  font-size: 18px;
+}
