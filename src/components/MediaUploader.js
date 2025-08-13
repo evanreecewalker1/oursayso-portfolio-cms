@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Upload, X, Image, Video, File, AlertCircle, CheckCircle, BarChart3 } from 'lucide-react';
 import CloudinaryService from '../services/cloudinaryConfig';
+import HybridMediaService from '../services/hybridMediaService';
 import './MediaUploader.css';
 
 const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acceptedTypes = "image/*,video/*" }) => {
@@ -95,10 +96,12 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
         // Determine folder based on file type
         const folder = item.file.type.startsWith('video/') ? 'portfolio/videos' : 'portfolio/images';
         
-        // Upload to Cloudinary
-        const result = await CloudinaryService.uploadMedia(item.file, {
+        // Upload using hybrid media service (routes to Cloudinary or local storage)
+        console.log('📁 MediaUploader using HybridMediaService for:', item.file.name);
+        const result = await HybridMediaService.uploadMedia(item.file, {
           folder,
-          tags: ['portfolio', 'cms-upload', item.file.type.startsWith('video/') ? 'video' : 'image']
+          tags: ['portfolio', 'cms-upload', item.file.type.startsWith('video/') ? 'video' : 'image'],
+          projectId: `media-uploader-${Date.now()}`
         });
 
         // Update success status

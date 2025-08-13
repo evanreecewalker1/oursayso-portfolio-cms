@@ -76,23 +76,17 @@ class HybridMediaService {
     }
   }
 
-  // Upload to Cloudinary (existing logic)
+  // Upload to Cloudinary (existing logic) - NO FALLBACK
   async uploadToCloudinary(file, options = {}) {
     console.log('☁️ Uploading to Cloudinary:', file.name);
     
-    try {
-      const result = await CloudinaryService.uploadMedia(file, options);
-      
-      return {
-        ...result,
-        storageType: 'cloudinary',
-        localPath: null
-      };
-    } catch (cloudinaryError) {
-      console.warn('⚠️ Cloudinary upload failed, falling back to local storage:', cloudinaryError.message);
-      // Fallback to local storage if Cloudinary fails
-      return await this.storeLocally(file, options);
-    }
+    const result = await CloudinaryService.uploadMedia(file, options);
+    
+    return {
+      ...result,
+      storageType: 'cloudinary',
+      localPath: null
+    };
   }
 
   // Store file locally (new logic for videos and large images)
