@@ -6,6 +6,7 @@ import LoginForm from './components/LoginForm';
 import MediaUploader from './components/MediaUploader';
 import BandwidthMonitor from './components/BandwidthMonitor';
 import CloudinaryService from './services/cloudinaryConfig';
+import HybridMediaService from './services/hybridMediaService';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
@@ -943,13 +944,25 @@ const CMSApp = () => {
       return;
     }
 
-    // Validate file size limits (increased for Cloudinary)
-    const sizeLimit = type.includes('Video') ? 150 * 1024 * 1024 : 50 * 1024 * 1024; // 150MB for videos, 50MB for images
+    // Get storage method decision from hybrid service
+    const storageDecision = HybridMediaService.getStorageMethod(file);
+    console.log('📁 Storage decision for', file.name, ':', storageDecision);
+
+    // Adjust size limits based on storage method
+    let sizeLimit;
+    if (storageDecision.method === 'local') {
+      // Local storage can handle much larger files
+      sizeLimit = type.includes('Video') ? 500 * 1024 * 1024 : 100 * 1024 * 1024; // 500MB videos, 100MB images
+    } else {
+      // Cloudinary limits
+      sizeLimit = type.includes('Video') ? 150 * 1024 * 1024 : 50 * 1024 * 1024; // 150MB videos, 50MB images
+    }
+
     if (file.size > sizeLimit) {
       const limitMB = Math.round(sizeLimit / (1024 * 1024));
       setErrors(prev => ({
         ...prev,
-        [type]: `File size must be less than ${limitMB}MB`
+        [type]: `File size must be less than ${limitMB}MB (${storageDecision.method} storage)`
       }));
       return;
     }
@@ -1027,7 +1040,14 @@ const CMSApp = () => {
           console.log(`🔄 Using overwrite with public_id: ${publicId}`);
         }
 
-        const uploadPromise = CloudinaryService.uploadMedia(file, uploadOptions);
+        // Use hybrid media service with project context
+        const hybridOptions = {
+          ...uploadOptions,
+          projectId: editingProject?.id || `project_${Date.now()}`,
+          type: type
+        };
+        
+        const uploadPromise = HybridMediaService.uploadMedia(file, hybridOptions);
         
         // Add 30 second timeout
         const timeoutPromise = new Promise((_, reject) => 
@@ -1049,10 +1069,10 @@ const CMSApp = () => {
         }
       }
 
-      // Create final file object with Cloudinary data
-      const fileWithCloudinary = {
+      // Create final file object with hybrid storage data
+      const finalFileData = {
         file,
-        preview: result.url, // Use Cloudinary URL instead of local blob
+        preview: result.preview || result.url, // Use preview for local, URL for Cloudinary
         name: file.name,
         size: result.bytes || file.size,
         type: file.type,
@@ -1061,7 +1081,12 @@ const CMSApp = () => {
         uploadedAt: new Date().toISOString(),
         dimensions: result.width ? { width: result.width, height: result.height } : undefined,
         uploading: false,
-        cloudinary: true, // Flag to indicate this is a Cloudinary file
+        
+        // Hybrid storage properties
+        storageType: result.storageType || 'cloudinary', // 'cloudinary' or 'local'
+        localPath: result.localPath || null,
+        needsServerUpload: result.needsServerUpload || false,
+        cloudinary: result.storageType === 'cloudinary', // Legacy compatibility
         needsCleanup: false // No cleanup needed for Cloudinary URLs
       };
 
@@ -1081,8 +1106,8 @@ const CMSApp = () => {
         }
       }
 
-      console.log('🔄 DEBUG: Setting completed file state:', fileWithCloudinary);
-      updateFileInForm(type, fileWithCloudinary);
+      console.log('🔄 DEBUG: Setting completed file state:', finalFileData);
+      updateFileInForm(type, finalFileData);
       console.log(`✅ Successfully uploaded ${type}:`, result.url);
       
       // Show success message
@@ -1460,21 +1485,45 @@ const CMSApp = () => {
       order: index,
       slug: project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
       
-      // Background files - use Cloudinary URLs directly, no local fallbacks
+      // Background files - handle both Cloudinary and local storage
       tileBackground: {
         type: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
         url: (() => {
-          const url = project.backgrounds?.tile?.file?.url || project.tileBackgroundFile?.url;
-          return url ? `${url}?v=${cacheVersion}` : null;
-        })()
+          const fileData = project.backgrounds?.tile?.file || project.tileBackgroundFile;
+          if (!fileData) return null;
+          
+          // Use appropriate URL based on storage type
+          let baseUrl = fileData.url || fileData.localPath;
+          if (!baseUrl) return null;
+          
+          // Add cache busting for Cloudinary URLs only (local URLs are served fresh)
+          if (fileData.storageType === 'cloudinary' || fileData.cloudinary) {
+            return `${baseUrl}?v=${cacheVersion}`;
+          }
+          
+          return baseUrl;
+        })(),
+        storageType: (project.backgrounds?.tile?.file || project.tileBackgroundFile)?.storageType || 'cloudinary'
       },
       
       pageBackground: {
         url: (() => {
-          const url = project.backgrounds?.page?.url || project.pageBackgroundFile?.url;
-          return url ? `${url}?v=${cacheVersion}` : null;
+          const fileData = project.backgrounds?.page || project.pageBackgroundFile;
+          if (!fileData) return null;
+          
+          // Use appropriate URL based on storage type
+          let baseUrl = fileData.url || fileData.localPath;
+          if (!baseUrl) return null;
+          
+          // Add cache busting for Cloudinary URLs only
+          if (fileData.storageType === 'cloudinary' || fileData.cloudinary) {
+            return `${baseUrl}?v=${cacheVersion}`;
+          }
+          
+          return baseUrl;
         })(),
-        dimensions: project.backgrounds?.page?.dimensions || project.pageBackgroundFile?.dimensions || null
+        dimensions: (project.backgrounds?.page || project.pageBackgroundFile)?.dimensions || null,
+        storageType: (project.backgrounds?.page || project.pageBackgroundFile)?.storageType || 'cloudinary'
       },
       
       // Media items
