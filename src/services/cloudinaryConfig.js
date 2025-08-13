@@ -19,7 +19,7 @@ const STORAGE_LIMIT = 15 * 1024 * 1024 * 1024; // 15GB in bytes
 class CloudinaryService {
   constructor() {
     // Fallback to hardcoded values if environment variables are not available
-    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'test_upload';
+    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'fresc_signed';
     this.apiKey = process.env.REACT_APP_CLOUDINARY_API_KEY || '188545171796635';
     this.apiSecret = process.env.REACT_APP_CLOUDINARY_API_SECRET || 'B8lQJoL1N13A2b2LhBXrHiGUumY';
     this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dnuni9dgl';
@@ -61,6 +61,14 @@ class CloudinaryService {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', this.uploadPreset);
+      
+      // Add debug logging
+      console.log('🔍 FormData contents:', {
+        uploadPreset: this.uploadPreset,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
       
       // Configure based on media type
       const isVideo = file.type.startsWith('video/');
