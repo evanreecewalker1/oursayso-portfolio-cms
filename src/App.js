@@ -1066,8 +1066,12 @@ const CMSApp = () => {
       const finalFileData = {
         file,
         preview: (() => {
-          if (result.storageType === 'local') {
-            // For local files, use the local path directly - no blob URLs in persistent state
+          if (result.storageType === 'portfolio') {
+            // For portfolio repository files, use the local path directly
+            console.log('📁 Final portfolio file preview set to repository path:', result.localPath);
+            return result.localPath || result.url;
+          } else if (result.storageType === 'local') {
+            // For browser-stored files, use the local path directly - no blob URLs in persistent state
             console.log('💾 Final local file preview set to local path:', result.localPath);
             return result.localPath || result.url;
           } else {
@@ -1108,9 +1112,9 @@ const CMSApp = () => {
         }
       }
 
-      // For local files, clean up any blob URLs that might be lingering
-      if (result.storageType === 'local') {
-        console.log('🧹 Cleaning up blob URLs for local file after successful upload');
+      // For local and portfolio files, clean up any blob URLs that might be lingering
+      if (result.storageType === 'local' || result.storageType === 'portfolio') {
+        console.log('🧹 Cleaning up blob URLs after successful upload');
         HybridMediaService.cleanupProjectBlobs(hybridOptions.projectId);
       }
 
@@ -1120,7 +1124,8 @@ const CMSApp = () => {
       
       // Show success message
       const fileTypeDisplay = type.includes('tile') ? 'tile background' : 'page background';
-      const storageLocation = result.storageType === 'local' ? 'local storage' : 'Cloudinary';
+      const storageLocation = result.storageType === 'portfolio' ? 'portfolio repository' : 
+                              result.storageType === 'local' ? 'local storage' : 'Cloudinary';
       setSuccessMessage(`✅ ${fileTypeDisplay} uploaded successfully to ${storageLocation}!`);
       setTimeout(() => setSuccessMessage(''), 3000);
       
@@ -2431,8 +2436,12 @@ const CMSApp = () => {
                             <img 
                               src={(() => {
                                 let displayUrl;
-                                if (projectForm.tileBackgroundFile.storageType === 'local') {
-                                  // For local files, get fresh display URL from hybrid service
+                                if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
+                                  // For portfolio repository files, use local path directly
+                                  displayUrl = projectForm.tileBackgroundFile.localPath || projectForm.tileBackgroundFile.url;
+                                  console.log('📁 Portfolio tile image display URL:', displayUrl);
+                                } else if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                  // For browser-stored files, get fresh display URL from hybrid service
                                   displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.url;
                                   console.log('🖼️ Local tile image display URL:', displayUrl);
                                 } else {
@@ -2456,8 +2465,12 @@ const CMSApp = () => {
                             <video 
                               src={(() => {
                                 let displayUrl;
-                                if (projectForm.tileBackgroundFile.storageType === 'local') {
-                                  // For local files, get fresh display URL from hybrid service
+                                if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
+                                  // For portfolio repository files, use local path directly
+                                  displayUrl = projectForm.tileBackgroundFile.localPath || projectForm.tileBackgroundFile.url;
+                                  console.log('📁 Portfolio tile video display URL:', displayUrl);
+                                } else if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                  // For browser-stored files, get fresh display URL from hybrid service
                                   displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
                                   console.log('🎬 Local tile video display URL:', displayUrl);
                                 } else {
@@ -2886,8 +2899,12 @@ const CMSApp = () => {
                           <video 
                             src={(() => {
                               let displayUrl;
-                              if (projectForm.tileBackgroundFile.storageType === 'local') {
-                                // For local files, get fresh display URL from hybrid service
+                              if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
+                                // For portfolio repository files, use local path directly
+                                displayUrl = projectForm.tileBackgroundFile.localPath || projectForm.tileBackgroundFile.url;
+                                console.log('📁 Portfolio tile preview video display URL:', displayUrl);
+                              } else if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                // For browser-stored files, get fresh display URL from hybrid service
                                 displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
                                 console.log('🎬 Local tile preview video display URL:', displayUrl);
                               } else {

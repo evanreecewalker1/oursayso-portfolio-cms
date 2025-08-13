@@ -3,6 +3,7 @@
 
 import CloudinaryService from './cloudinaryConfig';
 import LocalFileManager from './localFileManager';
+import PortfolioRepositoryService from './portfolioRepositoryService';
 
 class HybridMediaService {
   constructor() {
@@ -91,9 +92,85 @@ class HybridMediaService {
 
   // Store file locally (new logic for videos and large images)
   async storeLocally(file, options = {}) {
-    console.log('💾 Storing locally:', file.name);
+    console.log('💾 Storing to portfolio repository:', file.name);
 
-    // Generate local file path
+    const projectId = options.projectId || 'general';
+    const isVideo = this.videoTypes.includes(file.name.split('.').pop().toLowerCase());
+    
+    try {
+      let repositoryResult;
+      
+      if (isVideo) {
+        // Store videos in the portfolio repository for iPad offline access
+        console.log('🎬 Writing video to portfolio repository...');
+        repositoryResult = await PortfolioRepositoryService.writeVideoToRepository(file, projectId, file.name);
+        
+        // Also store in local manager for immediate CMS preview
+        await LocalFileManager.saveFile(file, repositoryResult.localPath);
+        
+        // Commit and push to portfolio repository
+        await PortfolioRepositoryService.commitAndPushToPortfolio(
+          `Add video: ${file.name} for project ${projectId}`,
+          [repositoryResult.absolutePath]
+        );
+        
+      } else {
+        // For large images, still use browser storage for now
+        console.log('🖼️ Storing large image in browser storage...');
+        const timestamp = Date.now();
+        const sanitizedFileName = this.sanitizeFileName(file.name);
+        const relativePath = `/images/${projectId}/${timestamp}-${sanitizedFileName}`;
+        
+        const savedFile = await LocalFileManager.saveFile(file, relativePath);
+        repositoryResult = {
+          localPath: relativePath,
+          fileName: savedFile.name,
+          size: file.size,
+          type: file.type
+        };
+      }
+      
+      // Create result object
+      const localResult = {
+        publicId: `portfolio_${Date.now()}`,
+        url: repositoryResult.localPath,
+        localPath: repositoryResult.localPath,
+        width: null, // Would be extracted for images
+        height: null,
+        format: file.name.split('.').pop().toLowerCase(),
+        bytes: file.size,
+        duration: null, // Would be extracted for videos
+        resourceType: isVideo ? 'video' : 'image',
+        storageType: 'portfolio', // New storage type for portfolio repository
+        uploadedAt: new Date().toISOString(),
+        
+        // Use local path for preview (no blob URLs after successful upload)
+        preview: repositoryResult.localPath,
+        file: file,
+        needsServerUpload: false,
+        repositoryPath: repositoryResult.absolutePath
+      };
+
+      console.log('✅ Portfolio repository storage completed:', {
+        fileName: file.name,
+        localPath: repositoryResult.localPath,
+        size: this.formatFileSize(file.size),
+        storageType: 'portfolio'
+      });
+
+      return localResult;
+    } catch (error) {
+      console.error('❌ Portfolio repository storage failed:', error);
+      // Fallback to browser storage if repository storage fails
+      console.log('⚠️ Falling back to browser storage...');
+      return await this.storeInBrowser(file, options);
+    }
+  }
+
+  // Fallback: Store in browser (old method)
+  async storeInBrowser(file, options = {}) {
+    console.log('💾 Storing in browser (fallback):', file.name);
+
     const projectId = options.projectId || 'general';
     const timestamp = Date.now();
     const sanitizedFileName = this.sanitizeFileName(file.name);
@@ -101,39 +178,29 @@ class HybridMediaService {
     const relativePath = `/${mediaType}/${projectId}/${timestamp}-${sanitizedFileName}`;
     
     try {
-      // Save file to local file manager
       const savedFile = await LocalFileManager.saveFile(file, relativePath);
       
-      // Create result object
       const localResult = {
         publicId: `local_${timestamp}`,
         url: relativePath,
         localPath: relativePath,
-        width: null, // Would be extracted for images
+        width: null,
         height: null,
         format: file.name.split('.').pop().toLowerCase(),
         bytes: file.size,
-        duration: null, // Would be extracted for videos
+        duration: null,
         resourceType: this.videoTypes.includes(file.name.split('.').pop().toLowerCase()) ? 'video' : 'image',
         storageType: 'local',
         uploadedAt: savedFile.uploadedAt,
-        
-        // Use appropriate URL for immediate preview
         preview: savedFile.temporaryPreview || savedFile.dataUrl,
-        file: file, // Keep reference to original file
-        needsServerUpload: false // Already "saved" locally
+        file: file,
+        needsServerUpload: false
       };
-
-      console.log('✅ Local storage completed:', {
-        fileName: file.name,
-        localPath: relativePath,
-        size: this.formatFileSize(file.size)
-      });
 
       return localResult;
     } catch (error) {
-      console.error('❌ Local storage failed:', error);
-      throw new Error(`Local storage failed: ${error.message}`);
+      console.error('❌ Browser storage failed:', error);
+      throw new Error(`Browser storage failed: ${error.message}`);
     }
   }
 
@@ -178,11 +245,15 @@ class HybridMediaService {
     return this.getStorageMethod(file).method === 'cloudinary';
   }
 
-  // Get appropriate URL for display (handles both local and Cloudinary)
+  // Get appropriate URL for display (handles Cloudinary, local, and portfolio storage)
   getDisplayUrl(mediaItem) {
-    if (mediaItem.storageType === 'local') {
-      // For local files, prefer the local path over blob URLs to avoid lifecycle issues
-      // Only create blob URLs for immediate preview during upload
+    if (mediaItem.storageType === 'portfolio') {
+      // For portfolio repository files, use the local path directly
+      console.log('📁 Using portfolio repository path for display:', mediaItem.localPath);
+      return mediaItem.localPath || mediaItem.preview;
+      
+    } else if (mediaItem.storageType === 'local') {
+      // For browser-stored files, prefer the local path over blob URLs to avoid lifecycle issues
       if (mediaItem.uploading) {
         try {
           // During upload, create fresh blob URL for immediate preview
@@ -198,6 +269,7 @@ class HybridMediaService {
         return mediaItem.localPath || mediaItem.preview;
       }
     } else {
+      // For Cloudinary files
       return mediaItem.url;
     }
   }
