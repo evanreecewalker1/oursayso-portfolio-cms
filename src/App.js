@@ -793,6 +793,19 @@ const CMSApp = () => {
       'project.pageBackgroundFile': project.pageBackgroundFile,
       'final pageBackgroundFile': formData.pageBackgroundFile
     });
+
+    // Detailed debugging for page background file structure
+    if (formData.pageBackgroundFile) {
+      console.log('🔍 DEBUG: Page background file details:', {
+        name: formData.pageBackgroundFile.name,
+        preview: formData.pageBackgroundFile.preview,
+        url: formData.pageBackgroundFile.url,
+        type: formData.pageBackgroundFile.type,
+        hasPreview: !!formData.pageBackgroundFile.preview,
+        hasUrl: !!formData.pageBackgroundFile.url,
+        fullObject: formData.pageBackgroundFile
+      });
+    }
     
     console.log('🔍 DEBUG: Form data prepared for editing:', formData);
     setProjectForm(formData);
@@ -2417,6 +2430,12 @@ const CMSApp = () => {
                 {projectForm.pageBackgroundFile && (
                   <div className="current-file-preview">
                     <h4>Current Background:</h4>
+                    {console.log('🔍 DEBUG: Rendering page background preview with:', {
+                      name: projectForm.pageBackgroundFile.name,
+                      preview: projectForm.pageBackgroundFile.preview,
+                      url: projectForm.pageBackgroundFile.url,
+                      uploading: projectForm.pageBackgroundFile.uploading
+                    })}
                     <div className="current-file">
                       {projectForm.pageBackgroundFile.uploading ? (
                         <div className="upload-progress">
@@ -2458,6 +2477,11 @@ const CMSApp = () => {
                     </div>
                   </div>
                 )}
+                
+                {console.log('🔍 DEBUG: Page background upload zone condition:', {
+                  hasPageBackgroundFile: !!projectForm.pageBackgroundFile,
+                  showUploadZone: !projectForm.pageBackgroundFile
+                })}
                 
                 {!projectForm.pageBackgroundFile && (
                   <div
