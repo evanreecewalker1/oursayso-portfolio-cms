@@ -1,18 +1,10 @@
 [build]
-  # Build command
   command = "npm run build"
-  
-  # Directory to publish
   publish = "build"
-  
-  # Node.js version
-  environment = { NODE_VERSION = "18" }
 
 [build.environment]
-  # Prevent CI warnings
+  NODE_VERSION = "18"
   CI = "false"
-  
-  # Generate sourcemap
   GENERATE_SOURCEMAP = "false"
 
 # Redirect rules for React Router (SPA)
@@ -20,7 +12,6 @@
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
 
 # Security headers
 [[headers]]
