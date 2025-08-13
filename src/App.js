@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, Edit, Trash2, Menu, Settings, Eye, Upload, ChevronUp, ChevronDown, X, FileImage, FileVideo, File, GripVertical, LogOut, User } from 'lucide-react';
+import { Plus, Edit, Trash2, Menu, Settings, Eye, Upload, ChevronUp, ChevronDown, X, FileImage, FileVideo, File, GripVertical } from 'lucide-react';
 import './App.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
@@ -501,6 +501,35 @@ const CMSApp = () => {
     error: null,
     isPublishing: false
   });
+  const [showPublishHelp, setShowPublishHelp] = useState(false);
+  const [draggedTestimonial, setDraggedTestimonial] = useState(null);
+
+  // Testimonial drag handlers
+  const handleTestimonialDragStart = (e, index) => {
+    setDraggedTestimonial(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleTestimonialDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleTestimonialDrop = (e, targetIndex) => {
+    e.preventDefault();
+    if (draggedTestimonial === null || draggedTestimonial === targetIndex) return;
+    
+    const reorderedTestimonials = [...testimonials];
+    const draggedItem = reorderedTestimonials[draggedTestimonial];
+    
+    // Remove dragged item
+    reorderedTestimonials.splice(draggedTestimonial, 1);
+    // Insert at target position
+    reorderedTestimonials.splice(targetIndex, 0, draggedItem);
+    
+    setTestimonials(reorderedTestimonials);
+    setDraggedTestimonial(null);
+  };
   
   // File upload refs
   const tileImageRef = useRef(null);
@@ -2787,27 +2816,13 @@ const CMSApp = () => {
           </div>
         </div>
         <div className="header-actions">
-          <div className="user-info">
-            <User size={16} />
-            <span className="user-name">{user?.name || user?.username}</span>
-            <span className="user-role">({user?.role})</span>
-          </div>
           <button 
             className="btn btn-secondary"
             onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
           >
             <Eye size={18} />
-            Preview Portfolio
+            Preview
           </button>
-          {process.env.NODE_ENV === 'development' && (
-            <button 
-              className="btn btn-outline"
-              onClick={previewGeneratedJSON}
-              title="Download generated JSON for testing"
-            >
-              📋 Export JSON
-            </button>
-          )}
           <button 
             className={`btn ${isConfigured ? 'btn-success' : 'btn-warning'}`}
             onClick={isConfigured ? handlePublishToNetlify : openSettingsModal}
@@ -2815,15 +2830,7 @@ const CMSApp = () => {
             title={isConfigured ? 'Publish to Netlify' : 'Configure deployment settings first'}
           >
             <Upload size={18} />
-            {publishProgress.isPublishing ? 'Publishing...' : 
-             isConfigured ? 'Publish to Netlify' : 'Setup Deployment'}
-          </button>
-          <button 
-            className="btn btn-logout"
-            onClick={logout}
-            title="Sign Out"
-          >
-            <LogOut size={16} />
+            {publishProgress.isPublishing ? 'Publishing...' : 'Publish'}
           </button>
         </div>
       </div>
@@ -2870,12 +2877,12 @@ const CMSApp = () => {
           <div className="modal-overlay">
             <div className="publish-modal">
               <div className="modal-header">
-                <h3>Publish to Netlify</h3>
-                {!publishProgress.isPublishing && (
-                  <button onClick={closePublishModal} className="close-preview">
-                    <X size={24} />
-                  </button>
-                )}
+                <div className="header-content">
+                  <h3>Publish to Netlify</h3>
+                </div>
+                <button onClick={closePublishModal} className="close-button">
+                  <X size={20} />
+                </button>
               </div>
               
               <div className="modal-body">
@@ -2992,6 +2999,17 @@ const CMSApp = () => {
                     {publishProgress.step === 6 && !publishProgress.isPublishing && (
                       <div className="publish-success">
                         <h4>🎉 Portfolio Published Successfully!</h4>
+                        <p className="live-url">
+                          <strong>Live at:</strong>{' '}
+                          <a 
+                            href="https://oursayso-sales-ipad.netlify.app"
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="deployment-link"
+                          >
+                            oursayso-sales-ipad.netlify.app
+                          </a>
+                        </p>
                         <div className="success-details">
                           <p><strong>Deployment Status:</strong> ✅ Live and active</p>
                           <p><strong>Published At:</strong> {new Date(publishProgress.timestamp || Date.now()).toLocaleString()}</p>
@@ -3034,13 +3052,25 @@ const CMSApp = () => {
                           </button>
                         </div>
                         
-                        <div className="next-steps">
-                          <h5>🚀 What happens next:</h5>
-                          <ol>
-                            <li>Netlify builds your updated portfolio</li>
-                            <li>New content appears on your live site (usually within 2-5 minutes)</li>
-                            <li>Changes are automatically backed up in your GitHub repository</li>
-                          </ol>
+                        <div className="publish-help-section">
+                          <button 
+                            className="help-toggle"
+                            onClick={() => setShowPublishHelp(!showPublishHelp)}
+                            type="button"
+                          >
+                            <span>What happens next?</span>
+                            <span className={`arrow ${showPublishHelp ? 'expanded' : ''}`}>▼</span>
+                          </button>
+                          
+                          {showPublishHelp && (
+                            <div className="help-content">
+                              <ul>
+                                <li>Netlify builds your updated portfolio</li>
+                                <li>New content appears on your live site (usually within 2-5 minutes)</li>
+                                <li>Changes are automatically backed up in your GitHub repository</li>
+                              </ul>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -3527,7 +3557,17 @@ const CMSApp = () => {
 
           <div className="testimonial-list">
             {testimonials.map((testimonial, index) => (
-              <div key={testimonial.id} className="testimonial-item">
+              <div 
+                key={testimonial.id} 
+                className="testimonial-item"
+                draggable
+                onDragStart={(e) => handleTestimonialDragStart(e, index)}
+                onDragOver={handleTestimonialDragOver}
+                onDrop={(e) => handleTestimonialDrop(e, index)}
+              >
+                <div className="testimonial-drag-handle">
+                  <GripVertical size={16} />
+                </div>
                 <div className="testimonial-number">{index + 1}</div>
                 <div className="testimonial-content">
                   <p>"{testimonial.text}"</p>
