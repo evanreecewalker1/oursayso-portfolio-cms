@@ -10,7 +10,7 @@ import HybridMediaService from './services/hybridMediaService';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
-  console.log('🔍 DEBUG: CMS App is loading - if you see this, debugging is working! Version: 2024-08-13-v5');
+  console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION! Version: 2024-08-13-v6-HYBRID');
   const { user, logout } = useAuth();
   
   const [currentView, setCurrentView] = useState('dashboard');
@@ -946,7 +946,8 @@ const CMSApp = () => {
 
     // Get storage method decision from hybrid service
     const storageDecision = HybridMediaService.getStorageMethod(file);
-    console.log('📁 Storage decision for', file.name, ':', storageDecision);
+    console.log('📁 HYBRID MEDIA SERVICE ACTIVE! Storage decision for', file.name, ':', storageDecision);
+    console.log('📁 File will be stored using:', storageDecision.method, '- Reason:', storageDecision.reason);
 
     // Adjust size limits based on storage method
     let sizeLimit;
