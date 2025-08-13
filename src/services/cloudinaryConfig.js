@@ -62,6 +62,19 @@ class CloudinaryService {
       formData.append('file', file);
       formData.append('upload_preset', this.uploadPreset);
       
+      // For signed uploads, add API key and timestamp
+      if (this.uploadPreset === 'fresc_signed') {
+        const timestamp = Math.round(new Date().getTime() / 1000);
+        formData.append('api_key', this.apiKey);
+        formData.append('timestamp', timestamp);
+        
+        console.log('🔍 Signed upload - added API key and timestamp:', {
+          uploadPreset: this.uploadPreset,
+          apiKey: this.apiKey,
+          timestamp: timestamp
+        });
+      }
+      
       // Add debug logging
       console.log('🔍 FormData contents:', {
         uploadPreset: this.uploadPreset,
@@ -73,21 +86,11 @@ class CloudinaryService {
       // Configure based on media type
       const isVideo = file.type.startsWith('video/');
       
+      // Simplified parameters first - add optimizations only after basic upload works
       if (isVideo) {
-        // Video-specific settings
         formData.append('resource_type', 'video');
-        formData.append('format', 'auto');
-        formData.append('quality', 'auto:good');
-        formData.append('video_codec', 'auto');
-        formData.append('eager', 'c_scale,w_1920,q_auto:good,f_auto|c_scale,w_1280,q_auto:good,f_auto|c_scale,w_854,q_auto:good,f_auto');
-        formData.append('eager_async', true);
       } else {
-        // Image-specific settings
         formData.append('resource_type', 'image');
-        formData.append('format', 'auto');
-        formData.append('quality', 'auto:good');
-        formData.append('eager', 'c_scale,w_1920,q_auto,f_auto|c_scale,w_1280,q_auto,f_auto|c_scale,w_854,q_auto,f_auto');
-        formData.append('eager_async', true);
       }
 
       // Add folder organization
@@ -95,20 +98,11 @@ class CloudinaryService {
         formData.append('folder', options.folder);
       }
 
-      // Add tags for better organization
-      if (options.tags) {
-        formData.append('tags', Array.isArray(options.tags) ? options.tags.join(',') : options.tags);
-      }
-
       const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
-        body: formData,
-        // Add headers to help with Chrome CORS issues
-        headers: {
-          'Accept': 'application/json'
-        }
+        body: formData
       });
 
       if (!response.ok) {
