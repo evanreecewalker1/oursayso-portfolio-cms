@@ -885,9 +885,14 @@ const CMSApp = () => {
 
     try {
       console.log(`🔄 Uploading ${type} to Cloudinary:`, file.name);
+      console.log('🔄 DEBUG: Cloudinary config:', {
+        cloudName: CloudinaryService.cloudName,
+        uploadPreset: CloudinaryService.uploadPreset,
+        hasApiKey: !!CloudinaryService.apiKey
+      });
       
       // Check if Cloudinary is configured
-      if (!process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || !process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET) {
+      if (!CloudinaryService.cloudName || !CloudinaryService.uploadPreset) {
         throw new Error('Cloudinary not configured properly. Please check your environment variables.');
       }
       
