@@ -1,0 +1,132 @@
+{
+  "projects": {
+    "projects": [
+      {
+        "id": "1",
+        "title": "Lovell Leadership Conferences",
+        "category": "Events",
+        "description": "A comprehensive events portfolio showcasing leadership conference planning and execution.",
+        "tags": ["events", "leadership", "conferences"],
+        "order": 0,
+        "slug": "lovell-leadership-conferences",
+        "tileBackground": {
+          "type": "image",
+          "url": "/images/tiles/1.jpg"
+        },
+        "pageBackground": {
+          "url": "/images/backgrounds/1.jpg",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        "mediaItems": [
+          {
+            "id": "media-1",
+            "type": "gallery",
+            "title": "Event Photos",
+            "files": [
+              {
+                "url": "/projects/1/media/gallery-01.jpg",
+                "name": "gallery-01.jpg",
+                "type": "image/jpeg"
+              }
+            ],
+            "order": 0
+          },
+          {
+            "id": "media-2", 
+            "type": "video",
+            "title": "Event Highlights",
+            "files": [
+              {
+                "url": "/projects/1/media/highlights.mp4",
+                "name": "highlights.mp4",
+                "type": "video/mp4"
+              }
+            ],
+            "order": 1
+          }
+        ],
+        "hasVideo": true,
+        "createdAt": "2025-01-01T00:00:00Z",
+        "updatedAt": "2025-01-01T12:00:00Z",
+        "status": "published"
+      },
+      {
+        "id": "2",
+        "title": "DRYZZE® & Cook Pronto® Branding",
+        "category": "Design & Digital",
+        "description": "Complete brand identity and digital presence for innovative kitchen appliance brands.",
+        "tags": ["branding", "design", "digital", "appliances"],
+        "order": 1,
+        "slug": "dryzze-cook-pronto-branding",
+        "tileBackground": {
+          "type": "image",
+          "url": "/images/tiles/2.jpg"
+        },
+        "pageBackground": {
+          "url": "/images/backgrounds/2.jpg",
+          "dimensions": {
+            "width": 1920,
+            "height": 1080
+          }
+        },
+        "mediaItems": [
+          {
+            "id": "media-3",
+            "type": "gallery",
+            "title": "Brand Assets",
+            "files": [
+              {
+                "url": "/projects/2/media/logo-design.jpg",
+                "name": "logo-design.jpg",
+                "type": "image/jpeg"
+              },
+              {
+                "url": "/projects/2/media/brand-guidelines.pdf",
+                "name": "brand-guidelines.pdf",
+                "type": "application/pdf"
+              }
+            ],
+            "order": 0
+          }
+        ],
+        "hasVideo": false,
+        "createdAt": "2025-01-01T00:00:00Z",
+        "updatedAt": "2025-01-01T12:00:00Z",
+        "status": "published"
+      }
+    ],
+    "metadata": {
+      "totalProjects": 2,
+      "categories": ["Events", "Design & Digital"],
+      "lastUpdated": "2025-01-01T12:00:00Z",
+      "version": "1.0.0"
+    }
+  },
+  "testimonials": {
+    "testimonials": [
+      {
+        "id": "1",
+        "text": "Their work is memorable, relevant, entertaining, thought provoking, and above all highly effective.",
+        "author": "Faye Frater, InterContinental Hotels Group"
+      },
+      {
+        "id": "2", 
+        "text": "Oursayso are great to work with both from the quality of their work and the enthusiasm and commitment that they put into it.",
+        "author": "Alan Long, Executive Director, Mears Group"
+      },
+      {
+        "id": "3",
+        "text": "Oursayso work hard with the leadership of the business to deliver appropriate, simple and direct messages that will see an immediate response.",
+        "author": "Paul Mildenstein, CEO, Atkore"
+      }
+    ],
+    "metadata": {
+      "totalTestimonials": 3,
+      "lastUpdated": "2025-01-01T12:00:00Z",
+      "version": "1.0.0"
+    }
+  }
+}
