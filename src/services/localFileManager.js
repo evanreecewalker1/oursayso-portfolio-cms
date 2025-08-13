@@ -7,7 +7,7 @@ class LocalFileManager {
     this.loadFromStorage();
   }
 
-  // Save file reference to localStorage (simulated local storage)
+  // Save file reference using efficient storage method
   saveFile(file, localPath) {
     const fileData = {
       name: file.name,
@@ -16,29 +16,60 @@ class LocalFileManager {
       localPath: localPath,
       lastModified: file.lastModified,
       uploadedAt: new Date().toISOString(),
-      // Store file as base64 for demo purposes
-      dataUrl: null // Will be set when needed
+      // For large files, we'll use blob URLs instead of base64
+      blobUrl: null,
+      fileReference: null // Keep reference to original file object
     };
 
-    // Convert file to base64 for storage (demo only - real app would upload to server)
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        fileData.dataUrl = reader.result;
-        this.localFiles.set(localPath, fileData);
-        this.saveToStorage();
-        
-        console.log('📁 File saved locally:', {
-          path: localPath,
-          size: this.formatFileSize(file.size),
-          type: file.type
-        });
-        
-        resolve(fileData);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+    // For large files (>5MB), use blob URL instead of base64 to avoid localStorage limits
+    if (file.size > 5 * 1024 * 1024) {
+      console.log('📁 Large file detected - using blob URL storage:', this.formatFileSize(file.size));
+      
+      // Create persistent blob URL
+      fileData.blobUrl = URL.createObjectURL(file);
+      fileData.fileReference = file; // Keep file reference in memory
+      fileData.storageMethod = 'blob';
+      
+      // Save only metadata to localStorage (not file data)
+      this.localFiles.set(localPath, {
+        ...fileData,
+        fileReference: null // Don't try to serialize file object
+      });
+      
+      // Store file reference separately in memory
+      this.fileReferences = this.fileReferences || new Map();
+      this.fileReferences.set(localPath, file);
+      
+      console.log('📁 Large file stored with blob URL:', {
+        path: localPath,
+        size: this.formatFileSize(file.size),
+        type: file.type,
+        blobUrl: fileData.blobUrl
+      });
+      
+      return Promise.resolve(fileData);
+    } else {
+      // For smaller files, convert to base64 as before
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          fileData.dataUrl = reader.result;
+          fileData.storageMethod = 'base64';
+          this.localFiles.set(localPath, fileData);
+          this.saveToStorage();
+          
+          console.log('📁 Small file saved as base64:', {
+            path: localPath,
+            size: this.formatFileSize(file.size),
+            type: file.type
+          });
+          
+          resolve(fileData);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
   }
 
   // Get file data by path
@@ -72,10 +103,27 @@ class LocalFileManager {
     return projectFiles;
   }
 
-  // Get file URL for display (returns data URL for demo)
+  // Get file URL for display (handles both blob and base64)
   getFileUrl(localPath) {
     const file = this.getFile(localPath);
-    return file ? file.dataUrl : null;
+    if (!file) return null;
+    
+    if (file.storageMethod === 'blob') {
+      // For large files, return blob URL or recreate if needed
+      if (file.blobUrl) {
+        return file.blobUrl;
+      } else if (this.fileReferences && this.fileReferences.has(localPath)) {
+        // Recreate blob URL if lost
+        const fileRef = this.fileReferences.get(localPath);
+        const newBlobUrl = URL.createObjectURL(fileRef);
+        file.blobUrl = newBlobUrl;
+        return newBlobUrl;
+      }
+      return null;
+    } else {
+      // For small files, return base64 data URL
+      return file.dataUrl;
+    }
   }
 
   // Clean up unused files (garbage collection)
@@ -91,13 +139,37 @@ class LocalFileManager {
     return deleted;
   }
 
-  // Persist to localStorage (demo storage)
+  // Persist to localStorage (demo storage) - only metadata, not file data
   saveToStorage() {
     try {
-      const serialized = JSON.stringify([...this.localFiles.entries()]);
+      // Only save small files' data to localStorage, large files are memory-only
+      const entriesToSave = [];
+      for (const [path, fileData] of this.localFiles.entries()) {
+        if (fileData.storageMethod === 'base64') {
+          // Save small files completely
+          entriesToSave.push([path, fileData]);
+        } else {
+          // Save only metadata for large files
+          entriesToSave.push([path, {
+            ...fileData,
+            blobUrl: null, // Don't persist blob URLs
+            fileReference: null // Don't persist file references
+          }]);
+        }
+      }
+      
+      const serialized = JSON.stringify(entriesToSave);
       localStorage.setItem('local-files', serialized);
+      console.log(`💾 Saved ${entriesToSave.length} file entries to storage`);
     } catch (error) {
       console.warn('Failed to save local files to storage:', error);
+      // If localStorage is full, clear it and try again with just metadata
+      try {
+        localStorage.removeItem('local-files');
+        console.warn('Cleared localStorage due to quota exceeded');
+      } catch (clearError) {
+        console.error('Failed to clear localStorage:', clearError);
+      }
     }
   }
 

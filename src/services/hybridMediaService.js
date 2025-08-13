@@ -124,8 +124,8 @@ class HybridMediaService {
         storageType: 'local',
         uploadedAt: savedFile.uploadedAt,
         
-        // Use data URL for immediate preview
-        preview: savedFile.dataUrl,
+        // Use appropriate URL for immediate preview
+        preview: savedFile.blobUrl || savedFile.dataUrl,
         file: file, // Keep reference to original file
         needsServerUpload: false // Already "saved" locally
       };
@@ -187,7 +187,9 @@ class HybridMediaService {
   // Get appropriate URL for display (handles both local and Cloudinary)
   getDisplayUrl(mediaItem) {
     if (mediaItem.storageType === 'local') {
-      return mediaItem.localPath || mediaItem.preview || mediaItem.url;
+      // For local files, try to get the actual file URL from LocalFileManager
+      const fileUrl = LocalFileManager.getFileUrl(mediaItem.localPath);
+      return fileUrl || mediaItem.preview || mediaItem.url || mediaItem.localPath;
     } else {
       return mediaItem.url;
     }
