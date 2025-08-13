@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
 import MediaUploader from './components/MediaUploader';
 import BandwidthMonitor from './components/BandwidthMonitor';
+import CloudinaryService from './services/cloudinaryConfig';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
@@ -780,15 +781,15 @@ const CMSApp = () => {
     });
   };
 
-  const handleFileUpload = (file, type) => {
+  const handleFileUpload = async (file, type) => {
     if (!file) return;
 
     // Validate file type
     const allowedTypes = {
-      tileImage: ['image/jpeg', 'image/png', 'image/gif'],
+      tileImage: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
       tileVideo: ['video/mp4', 'video/webm', 'video/mov'],
-      pageBackground: ['image/jpeg', 'image/png', 'image/gif'],
-      galleryImage: ['image/jpeg', 'image/png', 'image/gif'],
+      pageBackground: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+      galleryImage: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
       pdf: ['application/pdf']
     };
 
@@ -800,8 +801,8 @@ const CMSApp = () => {
       return;
     }
 
-    // Validate file size limits
-    const sizeLimit = type.includes('Video') ? 5 * 1024 * 1024 : 10 * 1024 * 1024; // 5MB for videos, 10MB for others
+    // Validate file size limits (increased for Cloudinary)
+    const sizeLimit = type.includes('Video') ? 100 * 1024 * 1024 : 50 * 1024 * 1024; // 100MB for videos, 50MB for images
     if (file.size > sizeLimit) {
       const limitMB = Math.round(sizeLimit / (1024 * 1024));
       setErrors(prev => ({
@@ -818,20 +819,44 @@ const CMSApp = () => {
       return newErrors;
     });
 
-    // Create file preview URL
-    const fileWithPreview = {
+    // Show loading state
+    const loadingFile = {
       file,
-      preview: URL.createObjectURL(file),
+      preview: URL.createObjectURL(file), // Temporary preview while uploading
       name: file.name,
       size: file.size,
       type: file.type,
-      uploadedAt: new Date().toISOString()
+      uploadedAt: new Date().toISOString(),
+      uploading: true
     };
+    updateFileInForm(type, loadingFile);
 
-    // For images, check dimensions
-    if (file.type.startsWith('image/')) {
-      const img = new Image();
-      img.onload = () => {
+    try {
+      console.log(`🔄 Uploading ${type} to Cloudinary:`, file.name);
+      
+      // Upload to Cloudinary
+      const result = await CloudinaryService.uploadMedia(file, {
+        folder: `portfolio/${type.includes('tile') ? 'tiles' : type.includes('page') ? 'backgrounds' : 'gallery'}`,
+        tags: ['portfolio', type, 'background']
+      });
+
+      // Create final file object with Cloudinary data
+      const fileWithCloudinary = {
+        file,
+        preview: result.url, // Use Cloudinary URL instead of local blob
+        name: file.name,
+        size: result.bytes,
+        type: file.type,
+        url: result.url,
+        cloudinaryId: result.publicId,
+        uploadedAt: new Date().toISOString(),
+        dimensions: result.width ? { width: result.width, height: result.height } : undefined,
+        uploading: false,
+        cloudinary: true // Flag to indicate this is a Cloudinary file
+      };
+
+      // Check dimensions for recommendations (for images)
+      if (file.type.startsWith('image/') && result.width && result.height) {
         const recommendations = {
           tileImage: { width: 800, height: 800, ratio: '1:1' },
           pageBackground: { width: 1920, height: 1080, ratio: '16:9' },
@@ -840,17 +865,26 @@ const CMSApp = () => {
 
         if (recommendations[type]) {
           const rec = recommendations[type];
-          if (img.width !== rec.width || img.height !== rec.height) {
-            console.warn(`Image dimensions: ${img.width}x${img.height}. Recommended: ${rec.width}x${rec.height} (${rec.ratio})`);
+          if (result.width !== rec.width || result.height !== rec.height) {
+            console.warn(`Image dimensions: ${result.width}x${result.height}. Recommended: ${rec.width}x${rec.height} (${rec.ratio})`);
           }
         }
+      }
 
-        fileWithPreview.dimensions = { width: img.width, height: img.height };
-        updateFileInForm(type, fileWithPreview);
-      };
-      img.src = fileWithPreview.preview;
-    } else {
-      updateFileInForm(type, fileWithPreview);
+      updateFileInForm(type, fileWithCloudinary);
+      console.log(`✅ Successfully uploaded ${type}:`, result.url);
+      
+    } catch (error) {
+      console.error(`❌ Failed to upload ${type}:`, error);
+      
+      // Show error and remove loading state
+      setErrors(prev => ({
+        ...prev,
+        [type]: `Upload failed: ${error.message}`
+      }));
+      
+      // Remove the file from form
+      updateFileInForm(type, null);
     }
   };
 
@@ -1170,8 +1204,14 @@ const CMSApp = () => {
       tileBackground: {
         type: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
         url: project.backgrounds?.tile?.file 
-          ? generateProjectFilePath(project.id, project.backgrounds.tile.file.name, 'tileBackground')
-          : null
+          ? (project.backgrounds.tile.file.cloudinary && project.backgrounds.tile.file.url) 
+            ? project.backgrounds.tile.file.url  // Use Cloudinary URL if available
+            : generateProjectFilePath(project.id, project.backgrounds.tile.file.name, 'tileBackground') // Fallback to local
+          : project.tileBackgroundFile?.cloudinary && project.tileBackgroundFile?.url
+            ? project.tileBackgroundFile.url  // Direct Cloudinary URL from form
+            : project.tileBackgroundFile 
+              ? generateProjectFilePath(project.id, project.tileBackgroundFile.name, 'tileBackground') // Fallback
+              : null
       },
       
       pageBackground: {
