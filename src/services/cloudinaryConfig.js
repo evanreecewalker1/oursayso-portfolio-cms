@@ -1,10 +1,8 @@
 // Cloudinary Configuration and Optimization Service
 import { Cloudinary } from '@cloudinary/url-gen';
 import { auto } from '@cloudinary/url-gen/actions/resize';
-import { auto as autoFormat } from '@cloudinary/url-gen/actions/delivery';
-import { auto as autoQuality } from '@cloudinary/url-gen/actions/delivery';
+import { format, quality } from '@cloudinary/url-gen/actions/delivery';
 import { videoCodec } from '@cloudinary/url-gen/actions/transcode';
-import { mp4, webm } from '@cloudinary/url-gen/qualifiers/videoCodec';
 
 // Initialize Cloudinary instance
 const cld = new Cloudinary({
@@ -97,7 +95,11 @@ class CloudinaryService {
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
-        body: formData
+        body: formData,
+        // Add headers to help with Chrome CORS issues
+        headers: {
+          'Accept': 'application/json'
+        }
       });
 
       if (!response.ok) {
@@ -134,7 +136,7 @@ class CloudinaryService {
     const image = cld.image(publicId);
     
     // Apply automatic optimizations
-    image.delivery(autoFormat()).delivery(autoQuality());
+    image.delivery(format('auto')).delivery(quality('auto'));
     
     // Apply responsive sizing
     if (options.width || options.height) {
@@ -151,7 +153,7 @@ class CloudinaryService {
     if (options.responsive) {
       return sizes.map(size => ({
         width: size.width,
-        url: cld.image(publicId).resize(auto().width(size.width)).delivery(autoFormat()).delivery(autoQuality()).toURL(),
+        url: cld.image(publicId).resize(auto().width(size.width)).delivery(format('auto')).delivery(quality('auto')).toURL(),
         suffix: size.suffix
       }));
     }
@@ -164,11 +166,11 @@ class CloudinaryService {
     const video = cld.video(publicId);
     
     // Apply automatic optimizations
-    video.delivery(autoFormat()).delivery(autoQuality());
+    video.delivery(format('auto')).delivery(quality('auto'));
     
     // Apply video codec optimization
     if (options.codec) {
-      video.transcode(videoCodec(options.codec === 'mp4' ? mp4() : webm()));
+      video.transcode(videoCodec(options.codec));
     }
     
     // Apply responsive sizing for videos
@@ -187,7 +189,7 @@ class CloudinaryService {
       return qualities.map(qual => ({
         width: qual.width,
         quality: qual.quality,
-        url: cld.video(publicId).resize(auto().width(qual.width)).delivery(autoFormat()).delivery(autoQuality()).toURL(),
+        url: cld.video(publicId).resize(auto().width(qual.width)).delivery(format('auto')).delivery(quality('auto')).toURL(),
         suffix: qual.suffix
       }));
     }

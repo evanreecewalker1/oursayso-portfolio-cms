@@ -524,6 +524,28 @@ const CMSApp = () => {
     console.log('💾 Testimonials saved to localStorage');
   }, [testimonials]);
 
+  // Cleanup blob URLs when component unmounts or files change
+  useEffect(() => {
+    return () => {
+      // Cleanup on component unmount
+      if (projectForm.tileBackgroundFile && projectForm.tileBackgroundFile.needsCleanup && projectForm.tileBackgroundFile.preview && projectForm.tileBackgroundFile.preview.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(projectForm.tileBackgroundFile.preview);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup tile background blob URL on unmount:', cleanupError);
+        }
+      }
+      
+      if (projectForm.pageBackgroundFile && projectForm.pageBackgroundFile.needsCleanup && projectForm.pageBackgroundFile.preview && projectForm.pageBackgroundFile.preview.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(projectForm.pageBackgroundFile.preview);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup page background blob URL on unmount:', cleanupError);
+        }
+      }
+    };
+  }, [projectForm.tileBackgroundFile, projectForm.pageBackgroundFile]);
+
   const handleDragStart = (e, index, page = 1) => {
     console.log('🟢 Drag started for item at index:', index, 'from page', page);
     setDraggedItem(index);
@@ -784,6 +806,25 @@ const CMSApp = () => {
   const handleFileUpload = async (file, type) => {
     if (!file) return;
 
+    // Prevent Chrome crashes with immediate safety checks
+    try {
+      // Check if file is corrupted or invalid
+      if (!file.name || !file.type || file.size === 0) {
+        throw new Error('Invalid file - file appears to be corrupted or empty');
+      }
+      
+      // Memory safety check - Chrome can crash with very large files
+      if (file.size > 200 * 1024 * 1024) { // 200MB absolute limit
+        throw new Error('File too large. Maximum file size is 200MB to prevent browser crashes.');
+      }
+    } catch (safetyError) {
+      setErrors(prev => ({
+        ...prev,
+        [type]: safetyError.message
+      }));
+      return;
+    }
+
     // Validate file type
     const allowedTypes = {
       tileImage: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
@@ -819,40 +860,79 @@ const CMSApp = () => {
       return newErrors;
     });
 
-    // Show loading state
+    // Create blob URL safely and store it for cleanup
+    let blobUrl = null;
+    try {
+      blobUrl = URL.createObjectURL(file);
+    } catch (blobError) {
+      console.warn('Failed to create blob URL, using placeholder:', blobError);
+      blobUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zZW0iPkxvYWRpbmc8L3RleHQ+PC9zdmc+';
+    }
+
+    // Show loading state with safe blob URL
     const loadingFile = {
       file,
-      preview: URL.createObjectURL(file), // Temporary preview while uploading
+      preview: blobUrl,
       name: file.name,
       size: file.size,
       type: file.type,
       uploadedAt: new Date().toISOString(),
-      uploading: true
+      uploading: true,
+      needsCleanup: blobUrl && blobUrl.startsWith('blob:') // Flag for cleanup
     };
+    console.log('🔄 DEBUG: Setting loading file state:', loadingFile);
     updateFileInForm(type, loadingFile);
 
     try {
       console.log(`🔄 Uploading ${type} to Cloudinary:`, file.name);
       
-      // Upload to Cloudinary
-      const result = await CloudinaryService.uploadMedia(file, {
-        folder: `portfolio/${type.includes('tile') ? 'tiles' : type.includes('page') ? 'backgrounds' : 'gallery'}`,
-        tags: ['portfolio', type, 'background']
-      });
+      // Check if Cloudinary is configured
+      if (!process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || !process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET) {
+        throw new Error('Cloudinary not configured properly. Please check your environment variables.');
+      }
+      
+      // Wrap upload in error boundary to prevent crashes
+      let result;
+      try {
+        const uploadPromise = CloudinaryService.uploadMedia(file, {
+          folder: `portfolio/${type.includes('tile') ? 'tiles' : type.includes('page') ? 'backgrounds' : 'gallery'}`,
+          tags: ['portfolio', type, 'background']
+        });
+        
+        // Add 30 second timeout
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000)
+        );
+        
+        result = await Promise.race([uploadPromise, timeoutPromise]);
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message || 'Unknown error'}`);
+      }
+
+      // Clean up blob URL before creating final object
+      if (blobUrl && blobUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup blob URL:', cleanupError);
+        }
+      }
 
       // Create final file object with Cloudinary data
       const fileWithCloudinary = {
         file,
         preview: result.url, // Use Cloudinary URL instead of local blob
         name: file.name,
-        size: result.bytes,
+        size: result.bytes || file.size,
         type: file.type,
         url: result.url,
         cloudinaryId: result.publicId,
         uploadedAt: new Date().toISOString(),
         dimensions: result.width ? { width: result.width, height: result.height } : undefined,
         uploading: false,
-        cloudinary: true // Flag to indicate this is a Cloudinary file
+        cloudinary: true, // Flag to indicate this is a Cloudinary file
+        needsCleanup: false // No cleanup needed for Cloudinary URLs
       };
 
       // Check dimensions for recommendations (for images)
@@ -871,16 +951,31 @@ const CMSApp = () => {
         }
       }
 
+      console.log('🔄 DEBUG: Setting completed file state:', fileWithCloudinary);
       updateFileInForm(type, fileWithCloudinary);
       console.log(`✅ Successfully uploaded ${type}:`, result.url);
+      
+      // Show success message
+      const fileTypeDisplay = type.includes('tile') ? 'tile background' : 'page background';
+      setSuccessMessage(`✅ ${fileTypeDisplay} uploaded successfully to Cloudinary!`);
+      setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (error) {
       console.error(`❌ Failed to upload ${type}:`, error);
       
+      // Clean up blob URL on error
+      if (blobUrl && blobUrl.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup blob URL on error:', cleanupError);
+        }
+      }
+      
       // Show error and remove loading state
       setErrors(prev => ({
         ...prev,
-        [type]: `Upload failed: ${error.message}`
+        [type]: `Upload failed: ${error.message || 'Unknown error'}`
       }));
       
       // Remove the file from form
@@ -889,11 +984,35 @@ const CMSApp = () => {
   };
 
   const updateFileInForm = (type, fileWithPreview) => {
+    console.log('🔄 DEBUG: updateFileInForm called with:', { type, fileWithPreview });
+    
     if (type === 'tileImage' || type === 'tileVideo') {
+      // Clean up previous blob URL if exists
+      const currentFile = projectForm.tileBackgroundFile;
+      if (currentFile && currentFile.needsCleanup && currentFile.preview && currentFile.preview.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(currentFile.preview);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup previous blob URL:', cleanupError);
+        }
+      }
+      
+      console.log('🔄 DEBUG: Updating tileBackgroundFile with:', fileWithPreview);
       updateFormObject({
         tileBackgroundFile: fileWithPreview
       });
     } else if (type === 'pageBackground') {
+      // Clean up previous blob URL if exists
+      const currentFile = projectForm.pageBackgroundFile;
+      if (currentFile && currentFile.needsCleanup && currentFile.preview && currentFile.preview.startsWith('blob:')) {
+        try {
+          URL.revokeObjectURL(currentFile.preview);
+        } catch (cleanupError) {
+          console.warn('Failed to cleanup previous blob URL:', cleanupError);
+        }
+      }
+      
+      console.log('🔄 DEBUG: Updating pageBackgroundFile with:', fileWithPreview);
       updateFormObject({
         pageBackgroundFile: fileWithPreview
       });
@@ -1001,17 +1120,22 @@ const CMSApp = () => {
         
         // Background files structured for publishing
         backgrounds: {
-          tile: {
+          tile: projectForm.tileBackgroundFile ? {
             type: projectForm.tileBackgroundType,
-            file: projectForm.tileBackgroundFile ? {
+            file: {
               name: projectForm.tileBackgroundFile.name,
               size: projectForm.tileBackgroundFile.size,
               type: projectForm.tileBackgroundFile.type,
               dimensions: projectForm.tileBackgroundFile.dimensions,
               uploadedAt: projectForm.tileBackgroundFile.uploadedAt,
-              // In a real app, this would be the uploaded file URL
-              url: projectForm.tileBackgroundFile.preview
-            } : null
+              cloudinary: projectForm.tileBackgroundFile.cloudinary || false,
+              cloudinaryId: projectForm.tileBackgroundFile.cloudinaryId || null,
+              // Use Cloudinary URL if available, otherwise preview
+              url: projectForm.tileBackgroundFile.url || projectForm.tileBackgroundFile.preview
+            }
+          } : {
+            type: projectForm.tileBackgroundType,
+            file: null
           },
           page: projectForm.pageBackgroundFile ? {
             name: projectForm.pageBackgroundFile.name,
@@ -1047,7 +1171,11 @@ const CMSApp = () => {
         pageBackgroundFile: projectForm.pageBackgroundFile
       };
 
-      console.log('🔍 DEBUG: New project data to save:', newProject);
+      console.log('🔍 DEBUG: New project data being saved:', newProject);
+      console.log('🔍 DEBUG: Tile background in new project:', {
+        'backgrounds.tile.file': newProject.backgrounds.tile.file,
+        'tileBackgroundFile': newProject.tileBackgroundFile
+      });
 
       if (editingProject) {
         // Update existing project - check which page it's on
@@ -1319,6 +1447,14 @@ const CMSApp = () => {
   const validatePublishContent = () => {
     const errors = [];
     const warnings = [];
+    
+    console.log('🔍 DEBUG: Validating publish content...');
+    console.log('🔍 DEBUG: Projects data:', projects);
+    if (projects.length > 0) {
+      console.log('🔍 DEBUG: First project structure:', projects[0]);
+      console.log('🔍 DEBUG: First project tileBackgroundFile:', projects[0].tileBackgroundFile);
+      console.log('🔍 DEBUG: First project backgrounds:', projects[0].backgrounds);
+    }
 
     // Check if there are projects on page 1
     if (projects.length === 0) {
@@ -1336,10 +1472,18 @@ const CMSApp = () => {
       }
       
       if (!project.backgrounds?.page && !project.pageBackgroundFile) {
+        console.log(`🔍 DEBUG: Project ${index + 1} missing page background:`, {
+          'backgrounds.page': project.backgrounds?.page,
+          'pageBackgroundFile': project.pageBackgroundFile
+        });
         errors.push(`Page 1 Project ${index + 1}: Page background is required`);
       }
 
       if (!project.backgrounds?.tile?.file && !project.tileBackgroundFile) {
+        console.log(`🔍 DEBUG: Project ${index + 1} missing tile background:`, {
+          'backgrounds.tile.file': project.backgrounds?.tile?.file,
+          'tileBackgroundFile': project.tileBackgroundFile
+        });
         warnings.push(`Page 1 Project ${index + 1}: Tile background recommended`);
       }
     });
@@ -2087,34 +2231,51 @@ const CMSApp = () => {
                   <div className="current-file-preview">
                     <h4>Current File:</h4>
                     <div className="current-file">
-                      {projectForm.tileBackgroundType === 'image' ? (
-                        <img 
-                          src={projectForm.tileBackgroundFile.preview} 
-                          alt="Current tile background"
-                          className="current-thumbnail"
-                        />
+                      {projectForm.tileBackgroundFile.uploading ? (
+                        <div className="upload-progress">
+                          <div className="upload-spinner"></div>
+                          <div className="upload-info">
+                            <span className="file-name">Uploading {projectForm.tileBackgroundFile.name}...</span>
+                            <span className="upload-status">Please wait while we upload to Cloudinary</span>
+                          </div>
+                        </div>
                       ) : (
-                        <video 
-                          src={projectForm.tileBackgroundFile.preview}
-                          className="current-thumbnail"
-                          muted
-                        />
+                        <>
+                          {projectForm.tileBackgroundType === 'image' ? (
+                            <img 
+                              src={projectForm.tileBackgroundFile.preview} 
+                              alt="Current tile background"
+                              className="current-thumbnail"
+                            />
+                          ) : (
+                            <video 
+                              src={projectForm.tileBackgroundFile.preview}
+                              className="current-thumbnail"
+                              muted
+                            />
+                          )}
+                          <div className="current-file-info">
+                            <span className="file-name">
+                              {projectForm.tileBackgroundFile.name}
+                              {projectForm.tileBackgroundFile.cloudinary && (
+                                <span className="cloudinary-badge">☁️ Cloudinary</span>
+                              )}
+                            </span>
+                            {projectForm.tileBackgroundFile.dimensions && (
+                              <span className="file-dims">
+                                {projectForm.tileBackgroundFile.dimensions.width}x{projectForm.tileBackgroundFile.dimensions.height}
+                              </span>
+                            )}
+                            <button 
+                              onClick={() => updateFormObject({ tileBackgroundFile: null })}
+                              className="current-file-delete"
+                              title="Remove current file"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </>
                       )}
-                      <div className="current-file-info">
-                        <span className="file-name">{projectForm.tileBackgroundFile.name}</span>
-                        {projectForm.tileBackgroundFile.dimensions && (
-                          <span className="file-dims">
-                            {projectForm.tileBackgroundFile.dimensions.width}x{projectForm.tileBackgroundFile.dimensions.height}
-                          </span>
-                        )}
-                        <button 
-                          onClick={() => updateFormObject({ tileBackgroundFile: null })}
-                          className="current-file-delete"
-                          title="Remove current file"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
                     </div>
                   </div>
                 )}
@@ -2128,7 +2289,10 @@ const CMSApp = () => {
                       onDragOver={handleFileDragOver}
                       onDragLeave={handleFileDragLeave}
                       onDrop={(e) => handleFileDrop(e, 'tileImage')}
-                      onClick={() => tileImageRef.current?.click()}
+                      onClick={() => {
+                        console.log('🔄 DEBUG: Upload zone clicked, attempting to trigger file input');
+                        tileImageRef.current?.click();
+                      }}
                     >
                       {projectForm.tileBackgroundFile ? (
                         <div className="file-preview">
@@ -2162,7 +2326,12 @@ const CMSApp = () => {
                         ref={tileImageRef}
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleFileUpload(e.target.files[0], 'tileImage')}
+                        onChange={(e) => {
+                          console.log('🔄 DEBUG: File input onChange triggered:', e.target.files);
+                          if (e.target.files && e.target.files[0]) {
+                            handleFileUpload(e.target.files[0], 'tileImage');
+                          }
+                        }}
                         style={{ display: 'none' }}
                       />
                     </div>
@@ -2228,26 +2397,43 @@ const CMSApp = () => {
                   <div className="current-file-preview">
                     <h4>Current Background:</h4>
                     <div className="current-file">
-                      <img 
-                        src={projectForm.pageBackgroundFile.preview} 
-                        alt="Current page background"
-                        className="current-thumbnail"
-                      />
-                      <div className="current-file-info">
-                        <span className="file-name">{projectForm.pageBackgroundFile.name}</span>
-                        {projectForm.pageBackgroundFile.dimensions && (
-                          <span className="file-dims">
-                            {projectForm.pageBackgroundFile.dimensions.width}x{projectForm.pageBackgroundFile.dimensions.height}
-                          </span>
-                        )}
-                        <button 
-                          onClick={() => updateFormObject({ pageBackgroundFile: null })}
-                          className="current-file-delete"
-                          title="Remove current background"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
+                      {projectForm.pageBackgroundFile.uploading ? (
+                        <div className="upload-progress">
+                          <div className="upload-spinner"></div>
+                          <div className="upload-info">
+                            <span className="file-name">Uploading {projectForm.pageBackgroundFile.name}...</span>
+                            <span className="upload-status">Please wait while we upload to Cloudinary</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <img 
+                            src={projectForm.pageBackgroundFile.preview} 
+                            alt="Current page background"
+                            className="current-thumbnail"
+                          />
+                          <div className="current-file-info">
+                            <span className="file-name">
+                              {projectForm.pageBackgroundFile.name}
+                              {projectForm.pageBackgroundFile.cloudinary && (
+                                <span className="cloudinary-badge">☁️ Cloudinary</span>
+                              )}
+                            </span>
+                            {projectForm.pageBackgroundFile.dimensions && (
+                              <span className="file-dims">
+                                {projectForm.pageBackgroundFile.dimensions.width}x{projectForm.pageBackgroundFile.dimensions.height}
+                              </span>
+                            )}
+                            <button 
+                              onClick={() => updateFormObject({ pageBackgroundFile: null })}
+                              className="current-file-delete"
+                              title="Remove current background"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -2258,7 +2444,10 @@ const CMSApp = () => {
                   onDragOver={handleFileDragOver}
                   onDragLeave={handleFileDragLeave}
                   onDrop={(e) => handleFileDrop(e, 'pageBackground')}
-                  onClick={() => pageBackgroundRef.current?.click()}
+                  onClick={() => {
+                    console.log('🔄 DEBUG: Page background upload zone clicked');
+                    pageBackgroundRef.current?.click();
+                  }}
                 >
                   {projectForm.pageBackgroundFile ? (
                     <div className="file-preview">
@@ -2292,7 +2481,12 @@ const CMSApp = () => {
                     ref={pageBackgroundRef}
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleFileUpload(e.target.files[0], 'pageBackground')}
+                    onChange={(e) => {
+                      console.log('🔄 DEBUG: Page background file input onChange triggered:', e.target.files);
+                      if (e.target.files && e.target.files[0]) {
+                        handleFileUpload(e.target.files[0], 'pageBackground');
+                      }
+                    }}
                     style={{ display: 'none' }}
                   />
                 </div>
