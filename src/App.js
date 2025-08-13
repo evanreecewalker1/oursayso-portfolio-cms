@@ -1005,67 +1005,53 @@ const CMSApp = () => {
     updateFileInForm(type, loadingFile);
 
     try {
-      console.log(`🔄 Uploading ${type} to Cloudinary:`, file.name);
-      console.log('🔄 DEBUG: Cloudinary config:', {
-        cloudName: CloudinaryService.cloudName,
-        uploadPreset: CloudinaryService.uploadPreset,
-        hasApiKey: !!CloudinaryService.apiKey
-      });
+      console.log(`🔄 Processing ${type} upload:`, file.name);
+      console.log('🔄 Storage method will be:', storageDecision.method);
       
-      // Check if Cloudinary is configured
-      if (!CloudinaryService.cloudName || !CloudinaryService.uploadPreset) {
-        throw new Error('Cloudinary not configured properly. Please check your environment variables.');
-      }
-      
-      // Wrap upload in error boundary to prevent crashes
-      let result;
-      try {
-        // Generate predictable public_id for tile and background images to enable overwriting
-        const getPublicId = () => {
-          if (type.includes('tile')) {
-            // Use project ID for tile backgrounds to enable overwriting
-            const projectId = editingProject?.id || `project_${Date.now()}`;
-            return `portfolio/tiles/tile_${projectId}`;
-          } else if (type.includes('page')) {
-            // Use project ID for page backgrounds to enable overwriting  
-            const projectId = editingProject?.id || `project_${Date.now()}`;
-            return `portfolio/backgrounds/bg_${projectId}`;
-          }
-          return null; // Let Cloudinary generate ID for media gallery items
-        };
-
-        const uploadOptions = {
-          folder: `portfolio/${type.includes('tile') ? 'tiles' : type.includes('page') ? 'backgrounds' : 'gallery'}`,
-          tags: ['portfolio', type, 'background']
-        };
-
-        // Add overwrite options for tile and background images
-        const publicId = getPublicId();
-        if (publicId) {
-          uploadOptions.public_id = publicId;
-          uploadOptions.overwrite = true;
-          console.log(`🔄 Using overwrite with public_id: ${publicId}`);
+      // Generate predictable public_id for tile and background images to enable overwriting
+      const getPublicId = () => {
+        if (type.includes('tile')) {
+          // Use project ID for tile backgrounds to enable overwriting
+          const projectId = editingProject?.id || `project_${Date.now()}`;
+          return `portfolio/tiles/tile_${projectId}`;
+        } else if (type.includes('page')) {
+          // Use project ID for page backgrounds to enable overwriting  
+          const projectId = editingProject?.id || `project_${Date.now()}`;
+          return `portfolio/backgrounds/bg_${projectId}`;
         }
+        return null; // Let Cloudinary generate ID for media gallery items
+      };
 
-        // Use hybrid media service with project context
-        const hybridOptions = {
-          ...uploadOptions,
-          projectId: editingProject?.id || `project_${Date.now()}`,
-          type: type
-        };
-        
-        const uploadPromise = HybridMediaService.uploadMedia(file, hybridOptions);
-        
-        // Add 30 second timeout
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000)
-        );
-        
-        result = await Promise.race([uploadPromise, timeoutPromise]);
-      } catch (uploadError) {
-        console.error('Cloudinary upload error:', uploadError);
-        throw new Error(`Upload failed: ${uploadError.message || 'Unknown error'}`);
+      const uploadOptions = {
+        folder: `portfolio/${type.includes('tile') ? 'tiles' : type.includes('page') ? 'backgrounds' : 'gallery'}`,
+        tags: ['portfolio', type, 'background']
+      };
+
+      // Add overwrite options for tile and background images
+      const publicId = getPublicId();
+      if (publicId) {
+        uploadOptions.public_id = publicId;
+        uploadOptions.overwrite = true;
+        console.log(`🔄 Using overwrite with public_id: ${publicId}`);
       }
+
+      // Use hybrid media service with project context - it will decide upload method
+      const hybridOptions = {
+        ...uploadOptions,
+        projectId: editingProject?.id || `project_${Date.now()}`,
+        type: type
+      };
+      
+      console.log(`🚀 Starting ${storageDecision.method} upload via HybridMediaService`);
+      const uploadPromise = HybridMediaService.uploadMedia(file, hybridOptions);
+      
+      // Add 30 second timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Upload timeout after 30 seconds')), 30000)
+      );
+      
+      const result = await Promise.race([uploadPromise, timeoutPromise]);
+      console.log(`✅ ${storageDecision.method} upload completed:`, result.url || result.localPath);
 
       // Clean up temporary preview blob URL
       if (tempPreview && tempPreview.startsWith('blob:')) {
@@ -1081,8 +1067,8 @@ const CMSApp = () => {
         file,
         preview: (() => {
           if (result.storageType === 'local') {
-            // For local files, get fresh URL from hybrid service (manages blob lifecycle)
-            return HybridMediaService.getDisplayUrl(result) || result.preview || result.url;
+            // For local files, use the local path directly - no blob URLs in persistent state
+            return result.localPath || result.url;
           } else {
             // For Cloudinary, use direct URL
             return result.url;
@@ -2440,7 +2426,15 @@ const CMSApp = () => {
                             />
                           ) : (
                             <video 
-                              src={projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url}
+                              src={(() => {
+                                if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                  // For local files, get fresh display URL from hybrid service
+                                  return HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.preview;
+                                } else {
+                                  // For Cloudinary, use direct URL
+                                  return projectForm.tileBackgroundFile.url || projectForm.tileBackgroundFile.preview;
+                                }
+                              })()}
                               className="current-thumbnail"
                               muted
                             />
@@ -2843,7 +2837,15 @@ const CMSApp = () => {
                       >
                         {projectForm.tileBackgroundFile && projectForm.tileBackgroundType === 'video' && (
                           <video 
-                            src={projectForm.tileBackgroundFile.preview}
+                            src={(() => {
+                              if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                // For local files, get fresh display URL from hybrid service
+                                return HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.preview;
+                              } else {
+                                // For Cloudinary, use direct URL
+                                return projectForm.tileBackgroundFile.url || projectForm.tileBackgroundFile.preview;
+                              }
+                            })()}
                             autoPlay
                             loop
                             muted

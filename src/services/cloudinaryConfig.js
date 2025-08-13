@@ -83,7 +83,7 @@ class CloudinaryService {
       const isVideoType = file.type.startsWith('video/');
       const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB+
       
-      if (isVideo && isLargeFile) {
+      if (isVideoType && isLargeFile) {
         console.log('🔄 Attempting unsigned upload for large video file');
         try {
           return await this.uploadMediaUnsigned(file, options);
@@ -172,7 +172,7 @@ class CloudinaryService {
         fileType: file.type
       });
 
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideoType ? 'video' : 'image'}/upload`;
       
       const response = await fetch(uploadUrl, {
         method: 'POST',
@@ -230,7 +230,7 @@ class CloudinaryService {
       }
 
       const isVideoType = file.type.startsWith('video/');
-      const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideoType ? 'video' : 'image'}/upload`;
       
       console.log('🔍 Unsigned upload attempt:', {
         uploadPreset: this.uploadPreset,
