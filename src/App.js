@@ -787,33 +787,7 @@ const CMSApp = () => {
       mediaItems: project.mediaItems || []
     };
 
-    // Fix missing URL for page background files (generate the expected path)
-    if (formData.pageBackgroundFile && !formData.pageBackgroundFile.url && formData.pageBackgroundFile.name) {
-      formData.pageBackgroundFile.url = generateProjectFilePath(project.id, formData.pageBackgroundFile.name, 'pageBackground');
-      console.log('🔧 DEBUG: Generated URL for page background:', formData.pageBackgroundFile.url);
-    }
 
-    // Debug logging to understand the data structure
-    console.log('🔍 DEBUG: Page background loading:', {
-      'project.backgrounds?.page': project.backgrounds?.page,
-      'project.pageBackgroundFile': project.pageBackgroundFile,
-      'final pageBackgroundFile': formData.pageBackgroundFile
-    });
-
-    // Detailed debugging for page background file structure
-    if (formData.pageBackgroundFile) {
-      console.log('🔍 DEBUG: Page background file details:', {
-        name: formData.pageBackgroundFile.name,
-        preview: formData.pageBackgroundFile.preview,
-        url: formData.pageBackgroundFile.url,
-        type: formData.pageBackgroundFile.type,
-        hasPreview: !!formData.pageBackgroundFile.preview,
-        hasUrl: !!formData.pageBackgroundFile.url,
-        fullObject: formData.pageBackgroundFile
-      });
-    }
-    
-    console.log('🔍 DEBUG: Form data prepared for editing:', formData);
     setProjectForm(formData);
     setInitialFormState(JSON.stringify(formData));
     setErrors({});
@@ -1227,8 +1201,10 @@ const CMSApp = () => {
             type: projectForm.pageBackgroundFile.type,
             dimensions: projectForm.pageBackgroundFile.dimensions,
             uploadedAt: projectForm.pageBackgroundFile.uploadedAt,
-            // In a real app, this would be the uploaded file URL
-            url: projectForm.pageBackgroundFile.preview
+            cloudinary: projectForm.pageBackgroundFile.cloudinary || false,
+            cloudinaryId: projectForm.pageBackgroundFile.cloudinaryId || null,
+            // Use Cloudinary URL if available, otherwise preview
+            url: projectForm.pageBackgroundFile.url || projectForm.pageBackgroundFile.preview
           } : null
         },
         
@@ -2325,11 +2301,6 @@ const CMSApp = () => {
                         </div>
                       ) : (
                         <>
-                          {console.log('🔍 DEBUG: Tile background working with:', {
-                            preview: projectForm.tileBackgroundFile.preview,
-                            url: projectForm.tileBackgroundFile.url,
-                            finalSrc: projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url
-                          })}
                           {projectForm.tileBackgroundType === 'image' ? (
                             <img 
                               src={projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url} 
@@ -2458,18 +2429,10 @@ const CMSApp = () => {
                         </div>
                       ) : (
                         <>
-                          {console.log('🔍 DEBUG: Page background img src:', projectForm.pageBackgroundFile.preview || projectForm.pageBackgroundFile.url)}
                           <img 
                             src={projectForm.pageBackgroundFile.preview || projectForm.pageBackgroundFile.url} 
                             alt="Current page background"
                             className="current-thumbnail"
-                            onLoad={() => console.log('✅ Page background image loaded successfully')}
-                            onError={(e) => console.log('❌ Page background image failed to load:', {
-                              src: e.target.src,
-                              error: e.type,
-                              naturalWidth: e.target.naturalWidth,
-                              naturalHeight: e.target.naturalHeight
-                            })}
                           />
                           <div className="current-file-info">
                             <span className="file-name">
@@ -2497,11 +2460,6 @@ const CMSApp = () => {
                   </div>
                 )}
                 
-                {console.log('🔍 DEBUG: Page background upload zone condition:', {
-                  hasPageBackgroundFile: !!projectForm.pageBackgroundFile,
-                  showUploadZone: !projectForm.pageBackgroundFile
-                })}
-                
                 {!projectForm.pageBackgroundFile && (
                   <div
                     className={`upload-zone ${dragOverFile === 'pageBackground' ? 'drag-over' : ''} ${errors.pageBackground ? 'error' : ''}`}
@@ -2509,10 +2467,7 @@ const CMSApp = () => {
                     onDragOver={handleFileDragOver}
                     onDragLeave={handleFileDragLeave}
                     onDrop={(e) => handleFileDrop(e, 'pageBackground')}
-                    onClick={() => {
-                      console.log('🔄 DEBUG: Page background upload zone clicked');
-                      pageBackgroundRef.current?.click();
-                    }}
+                    onClick={() => pageBackgroundRef.current?.click()}
                   >
                     <div className="upload-placeholder">
                       <FileImage size={48} />
@@ -2525,7 +2480,6 @@ const CMSApp = () => {
                     type="file"
                     accept="image/*"
                     onChange={(e) => {
-                      console.log('🔄 DEBUG: Page background file input onChange triggered:', e.target.files);
                       if (e.target.files && e.target.files[0]) {
                         handleFileUpload(e.target.files[0], 'pageBackground');
                       }
