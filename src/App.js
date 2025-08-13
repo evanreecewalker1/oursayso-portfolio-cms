@@ -9,7 +9,7 @@ import CloudinaryService from './services/cloudinaryConfig';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
-  console.log('🔍 DEBUG: CMS App is loading - if you see this, debugging is working!');
+  console.log('🔍 DEBUG: CMS App is loading - if you see this, debugging is working! Version: 2024-08-13-v5');
   const { user, logout } = useAuth();
   
   const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'edit-project', 'edit-testimonials', 'settings'
@@ -2516,6 +2516,49 @@ const CMSApp = () => {
                   </div>
                 )}
                 {errors.pageBackground && <span className="error-text">{errors.pageBackground}</span>}
+              </div>
+            </div>
+          </div>
+
+          {/* Manual Video Preview Section - Temporary Testing */}
+          <div className="form-section">
+            <div className="section-header">
+              <h3>🎬 Manual Video Preview URL (Testing)</h3>
+            </div>
+            <div className="manual-video-input">
+              <label htmlFor="videoPreviewUrl">Paste video URL for preview:</label>
+              <input
+                id="videoPreviewUrl"
+                type="url"
+                placeholder="https://example.com/your-video.mp4"
+                className="form-control"
+                style={{ marginBottom: '10px' }}
+              />
+              <button 
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => {
+                  const url = document.getElementById('videoPreviewUrl').value;
+                  if (url) {
+                    // Create a temporary video element to test the URL
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.style.width = '300px';
+                    video.style.height = '200px';
+                    video.controls = true;
+                    video.muted = true;
+                    
+                    // Replace or add video preview
+                    const container = document.getElementById('video-preview-container');
+                    container.innerHTML = '';
+                    container.appendChild(video);
+                  }
+                }}
+              >
+                Test Video Preview
+              </button>
+              <div id="video-preview-container" style={{ marginTop: '10px', border: '1px solid #ccc', minHeight: '50px', padding: '10px' }}>
+                <p style={{ color: '#666', margin: 0 }}>Video preview will appear here</p>
               </div>
             </div>
           </div>
