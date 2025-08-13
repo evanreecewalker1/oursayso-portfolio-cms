@@ -1,6 +1,6 @@
 {
-  "short_name": "OurSayso CMS",
-  "name": "OurSayso Sales iPad CMS",
+  "short_name": "oursayso",
+  "name": "oursayso",
   "icons": [
     {
       "src": "images/oursayso-favicon.ico",
@@ -8,14 +8,29 @@
       "type": "image/x-icon"
     },
     {
-      "src": "logo192.png",
+      "src": "images/oursayso-logo-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "logo512.png",
+      "src": "images/oursayso-logo-512.png",
       "type": "image/png",
       "sizes": "512x512"
+    },
+    {
+      "src": "images/oursayso-logo-180.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    },
+    {
+      "src": "images/oursayso-logo-152.png",
+      "type": "image/png",
+      "sizes": "152x152"
+    },
+    {
+      "src": "images/oursayso-logo-120.png",
+      "type": "image/png",
+      "sizes": "120x120"
     }
   ],
   "start_url": ".",
