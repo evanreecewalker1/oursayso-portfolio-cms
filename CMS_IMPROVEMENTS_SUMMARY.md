@@ -27,7 +27,7 @@
 
 ### 4. **PREVIEW PORTFOLIO BUTTON** ✅
 **Implemented**: Working preview functionality
-- **URL**: Opens https://oursayso-sales-ipad-cms.netlify.app/
+- **URL**: Opens https://oursayso-sales-ipad.netlify.app/
 - **New Tab**: Opens in separate window/tab
 - **Always Available**: Works from main dashboard
 

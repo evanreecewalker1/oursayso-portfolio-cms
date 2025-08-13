@@ -1307,7 +1307,7 @@ const CMSApp = () => {
       githubToken: process.env.REACT_APP_GITHUB_TOKEN || '',
       githubRepo: process.env.REACT_APP_GITHUB_REPO || 'evanreecewalker1/oursayso-sales-ipad',
       netlifyWebhook: process.env.REACT_APP_NETLIFY_WEBHOOK || 'https://api.netlify.com/build_hooks/689c758dc4139eee0c344a19',
-      portfolioUrl: process.env.REACT_APP_PORTFOLIO_URL || 'https://oursayso-sales-ipad-cms.netlify.app'
+      portfolioUrl: process.env.REACT_APP_PORTFOLIO_URL || 'https://oursayso-sales-ipad.netlify.app'
     };
   });
 
@@ -2461,7 +2461,7 @@ const CMSApp = () => {
           </div>
           <button 
             className="btn btn-secondary"
-            onClick={() => window.open('https://oursayso-sales-ipad-cms.netlify.app/', '_blank')}
+            onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
           >
             <Eye size={18} />
             Preview Portfolio
@@ -2683,7 +2683,7 @@ const CMSApp = () => {
                         
                         <div className="success-actions">
                           <a 
-                            href="https://oursayso-sales-ipad-cms.netlify.app"
+                            href="https://oursayso-sales-ipad.netlify.app"
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="btn btn-primary"

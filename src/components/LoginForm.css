@@ -13,26 +13,14 @@
   overflow: hidden;
 }
 
-/* Animated Background */
+/* Clean Background */
 .login-background {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-  background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
-}
-
-.login-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at 30% 70%, rgba(22, 82, 251, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 70% 30%, rgba(22, 82, 251, 0.05) 0%, transparent 50%);
+  background: #f8fafc;
 }
 
 @keyframes gradientShift {
@@ -44,17 +32,13 @@
 /* Login Card */
 .login-card {
   position: relative;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   padding: 48px 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   transform: translateY(0);
   transition: all 0.3s ease;
   animation: slideUp 0.6s ease-out;
@@ -62,10 +46,7 @@
 
 .login-card:hover {
   transform: translateY(-2px);
-  box-shadow: 
-    0 35px 70px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
 @keyframes slideUp {
@@ -98,14 +79,13 @@
 .login-title {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: #1e293b;
   margin: 0 0 8px 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .login-subtitle {
   font-size: 16px;
-  color: #94a3b8;
+  color: #64748b;
   margin: 0;
   font-weight: 400;
 }
@@ -123,43 +103,35 @@
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #e2e8f0;
+  color: #374151;
   margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .form-input {
   width: 100%;
-  padding: 16px 20px;
-  background: rgba(30, 41, 59, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
   font-family: 'Barlow', sans-serif;
   font-size: 16px;
-  color: #ffffff;
+  color: #374151;
   transition: all 0.3s ease;
-  backdrop-filter: blur(10px);
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
   border-color: #1652FB;
-  background: rgba(30, 41, 59, 0.95);
-  box-shadow: 
-    0 0 0 3px rgba(22, 82, 251, 0.1),
-    0 8px 25px rgba(22, 82, 251, 0.15);
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 3px rgba(22, 82, 251, 0.1);
 }
 
 .form-input:hover:not(:focus) {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(30, 41, 59, 0.9);
+  border-color: #cbd5e1;
 }
 
 .form-input::placeholder {
-  color: #64748b;
+  color: #9ca3af;
 }
 
 .form-input.error {
@@ -181,22 +153,22 @@
 
 .password-toggle {
   position: absolute;
-  right: 16px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #64748b;
+  color: #9ca3af;
   cursor: pointer;
   padding: 4px;
-  border-radius: 6px;
+  border-radius: 4px;
   transition: all 0.2s ease;
   font-size: 16px;
 }
 
 .password-toggle:hover {
-  color: #94a3b8;
-  background: rgba(255, 255, 255, 0.05);
+  color: #6b7280;
+  background: #f9fafb;
 }
 
 /* Error Message */
