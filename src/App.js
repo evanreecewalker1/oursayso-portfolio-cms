@@ -928,10 +928,34 @@ const CMSApp = () => {
       // Wrap upload in error boundary to prevent crashes
       let result;
       try {
-        const uploadPromise = CloudinaryService.uploadMedia(file, {
+        // Generate predictable public_id for tile and background images to enable overwriting
+        const getPublicId = () => {
+          if (type.includes('tile')) {
+            // Use project ID for tile backgrounds to enable overwriting
+            const projectId = editingProject?.id || `project_${Date.now()}`;
+            return `portfolio/tiles/tile_${projectId}`;
+          } else if (type.includes('page')) {
+            // Use project ID for page backgrounds to enable overwriting  
+            const projectId = editingProject?.id || `project_${Date.now()}`;
+            return `portfolio/backgrounds/bg_${projectId}`;
+          }
+          return null; // Let Cloudinary generate ID for media gallery items
+        };
+
+        const uploadOptions = {
           folder: `portfolio/${type.includes('tile') ? 'tiles' : type.includes('page') ? 'backgrounds' : 'gallery'}`,
           tags: ['portfolio', type, 'background']
-        });
+        };
+
+        // Add overwrite options for tile and background images
+        const publicId = getPublicId();
+        if (publicId) {
+          uploadOptions.public_id = publicId;
+          uploadOptions.overwrite = true;
+          console.log(`🔄 Using overwrite with public_id: ${publicId}`);
+        }
+
+        const uploadPromise = CloudinaryService.uploadMedia(file, uploadOptions);
         
         // Add 30 second timeout
         const timeoutPromise = new Promise((_, reject) => 
@@ -2277,13 +2301,13 @@ const CMSApp = () => {
                         <>
                           {projectForm.tileBackgroundType === 'image' ? (
                             <img 
-                              src={projectForm.tileBackgroundFile.preview} 
+                              src={projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url} 
                               alt="Current tile background"
                               className="current-thumbnail"
                             />
                           ) : (
                             <video 
-                              src={projectForm.tileBackgroundFile.preview}
+                              src={projectForm.tileBackgroundFile.preview || projectForm.tileBackgroundFile.url}
                               className="current-thumbnail"
                               muted
                             />
@@ -2316,7 +2340,7 @@ const CMSApp = () => {
 
                 {/* Tile Upload Zone */}
                 <div className="upload-section">
-                  {projectForm.tileBackgroundType === 'image' ? (
+                  {!projectForm.tileBackgroundFile && projectForm.tileBackgroundType === 'image' ? (
                     <div
                       className={`upload-zone ${dragOverFile === 'tileImage' ? 'drag-over' : ''} ${errors.tileImage ? 'error' : ''}`}
                       onDragEnter={(e) => handleFileDragEnter(e, 'tileImage')}
@@ -2328,34 +2352,12 @@ const CMSApp = () => {
                         tileImageRef.current?.click();
                       }}
                     >
-                      {projectForm.tileBackgroundFile ? (
-                        <div className="file-preview">
-                          <img 
-                            src={projectForm.tileBackgroundFile.preview} 
-                            alt="Tile background"
-                            className="preview-image"
-                          />
-                          <div className="file-info">
-                            <span>{projectForm.tileBackgroundFile.name}</span>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateFormObject({ tileBackgroundFile: null });
-                              }}
-                              className="remove-file"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="upload-placeholder">
-                          <FileImage size={48} />
-                          <p>Drop image here or click to browse</p>
-                          <small>Recommended: 800x800px (1:1 ratio)</small>
-                          <small>JPG, PNG, GIF up to 10MB</small>
-                        </div>
-                      )}
+                      <div className="upload-placeholder">
+                        <FileImage size={48} />
+                        <p>Drop image here or click to browse</p>
+                        <small>Recommended: 800x800px (1:1 ratio)</small>
+                        <small>JPG, PNG, GIF up to 10MB</small>
+                      </div>
                       <input
                         ref={tileImageRef}
                         type="file"
@@ -2369,7 +2371,7 @@ const CMSApp = () => {
                         style={{ display: 'none' }}
                       />
                     </div>
-                  ) : (
+                  ) : !projectForm.tileBackgroundFile && projectForm.tileBackgroundType === 'video' ? (
                     <div
                       className={`upload-zone ${dragOverFile === 'tileVideo' ? 'drag-over' : ''} ${errors.tileVideo ? 'error' : ''}`}
                       onDragEnter={(e) => handleFileDragEnter(e, 'tileVideo')}
@@ -2378,34 +2380,12 @@ const CMSApp = () => {
                       onDrop={(e) => handleFileDrop(e, 'tileVideo')}
                       onClick={() => tileVideoRef.current?.click()}
                     >
-                      {projectForm.tileBackgroundFile ? (
-                        <div className="file-preview">
-                          <video 
-                            src={projectForm.tileBackgroundFile.preview} 
-                            className="preview-video"
-                            controls
-                          />
-                          <div className="file-info">
-                            <span>{projectForm.tileBackgroundFile.name}</span>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                updateFormObject({ tileBackgroundFile: null });
-                              }}
-                              className="remove-file"
-                            >
-                              <X size={16} />
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="upload-placeholder">
-                          <FileVideo size={48} />
-                          <p>Drop video here or click to browse</p>
-                          <small>Recommended: 800x800px, under 5MB</small>
-                          <small>MP4, WebM, MOV formats</small>
-                        </div>
-                      )}
+                      <div className="upload-placeholder">
+                        <FileVideo size={48} />
+                        <p>Drop video here or click to browse</p>
+                        <small>Recommended: 800x800px, under 5MB</small>
+                        <small>MP4, WebM, MOV formats</small>
+                      </div>
                       <input
                         ref={tileVideoRef}
                         type="file"
@@ -2414,7 +2394,7 @@ const CMSApp = () => {
                         style={{ display: 'none' }}
                       />
                     </div>
-                  )}
+                  ) : null}
                   {(errors.tileImage || errors.tileVideo) && (
                     <span className="error-text">{errors.tileImage || errors.tileVideo}</span>
                   )}
@@ -2442,7 +2422,7 @@ const CMSApp = () => {
                       ) : (
                         <>
                           <img 
-                            src={projectForm.pageBackgroundFile.preview} 
+                            src={projectForm.pageBackgroundFile.preview || projectForm.pageBackgroundFile.url} 
                             alt="Current page background"
                             className="current-thumbnail"
                           />
@@ -2472,45 +2452,24 @@ const CMSApp = () => {
                   </div>
                 )}
                 
-                <div
-                  className={`upload-zone ${dragOverFile === 'pageBackground' ? 'drag-over' : ''} ${errors.pageBackground ? 'error' : ''}`}
-                  onDragEnter={(e) => handleFileDragEnter(e, 'pageBackground')}
-                  onDragOver={handleFileDragOver}
-                  onDragLeave={handleFileDragLeave}
-                  onDrop={(e) => handleFileDrop(e, 'pageBackground')}
-                  onClick={() => {
-                    console.log('🔄 DEBUG: Page background upload zone clicked');
-                    pageBackgroundRef.current?.click();
-                  }}
-                >
-                  {projectForm.pageBackgroundFile ? (
-                    <div className="file-preview">
-                      <img 
-                        src={projectForm.pageBackgroundFile.preview} 
-                        alt="Page background"
-                        className="preview-image"
-                      />
-                      <div className="file-info">
-                        <span>{projectForm.pageBackgroundFile.name}</span>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            updateFormObject({ pageBackgroundFile: null });
-                          }}
-                          className="remove-file"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
+                {!projectForm.pageBackgroundFile && (
+                  <div
+                    className={`upload-zone ${dragOverFile === 'pageBackground' ? 'drag-over' : ''} ${errors.pageBackground ? 'error' : ''}`}
+                    onDragEnter={(e) => handleFileDragEnter(e, 'pageBackground')}
+                    onDragOver={handleFileDragOver}
+                    onDragLeave={handleFileDragLeave}
+                    onDrop={(e) => handleFileDrop(e, 'pageBackground')}
+                    onClick={() => {
+                      console.log('🔄 DEBUG: Page background upload zone clicked');
+                      pageBackgroundRef.current?.click();
+                    }}
+                  >
                     <div className="upload-placeholder">
                       <FileImage size={48} />
                       <p>Drop page background image here or click to browse</p>
                       <small>Recommended: 1920x1080px (16:9 ratio)</small>
                       <small>JPG, PNG, GIF up to 10MB</small>
                     </div>
-                  )}
                   <input
                     ref={pageBackgroundRef}
                     type="file"
@@ -2523,7 +2482,8 @@ const CMSApp = () => {
                     }}
                     style={{ display: 'none' }}
                   />
-                </div>
+                  </div>
+                )}
                 {errors.pageBackground && <span className="error-text">{errors.pageBackground}</span>}
               </div>
             </div>
@@ -2883,6 +2843,36 @@ const CMSApp = () => {
                 <button onClick={closePublishModal} className="close-button">
                   <X size={20} />
                 </button>
+              </div>
+
+              {/* Cloudinary Usage Meter */}
+              <div className="usage-meter-section">
+                <div className="usage-meter">
+                  <div className="usage-header">
+                    <div className="usage-title">
+                      <span className="cloudinary-icon">☁️</span>
+                      <span>Cloudinary Usage</span>
+                    </div>
+                    <span className="usage-percentage">
+                      {Math.round(CloudinaryService.getUsageStats().monthly.percentage)}%
+                    </span>
+                  </div>
+                  <div className="usage-bar">
+                    <div 
+                      className="usage-progress"
+                      style={{ 
+                        width: `${Math.min(CloudinaryService.getUsageStats().monthly.percentage, 100)}%`,
+                        backgroundColor: CloudinaryService.getUsageStats().monthly.percentage > 80 ? '#ef4444' : 
+                                       CloudinaryService.getUsageStats().monthly.percentage > 60 ? '#f59e0b' : '#10b981'
+                      }}
+                    />
+                  </div>
+                  <div className="usage-details">
+                    <span className="usage-text">
+                      {(CloudinaryService.getUsageStats().monthly.used / (1024 * 1024 * 1024)).toFixed(2)} GB / {(CloudinaryService.getUsageStats().monthly.limit / (1024 * 1024 * 1024)).toFixed(0)} GB used this month
+                    </span>
+                  </div>
+                </div>
               </div>
               
               <div className="modal-body">
@@ -3325,6 +3315,7 @@ const CMSApp = () => {
           </div>
 
           <div className="project-list">
+            {/* Render actual projects */}
             {projects.map((project, index) => (
               <div
                 key={project.id}
@@ -3406,6 +3397,51 @@ const CMSApp = () => {
                 </div>
               </div>
             ))}
+
+            {/* Render empty placeholders for Page 1 (up to 10 total) */}
+            {Array.from({ length: Math.max(0, 10 - projects.length) }, (_, index) => {
+              const emptyIndex = projects.length + index;
+              return (
+                <div
+                  key={`empty-${emptyIndex}`}
+                  onDragOver={(e) => handleDragOver(e, emptyIndex, 1)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, emptyIndex, 1)}
+                  className={`project-item project-item-empty ${
+                    dragOverIndex === emptyIndex && dragOverPage === 1 ? 'drag-over' : ''
+                  }`}
+                >
+                  <div className="project-drag">
+                    <div className="drag-left">
+                      <div className="empty-drag-indicator">⋮⋮</div>
+                      <span className="project-number">{emptyIndex + 1}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="project-info">
+                    <div className="empty-placeholder">
+                      <h3>Empty Slot</h3>
+                      <p>Drag a project here</p>
+                    </div>
+                  </div>
+
+                  <div className="project-actions">
+                    <button 
+                      className="btn-icon btn-add-empty"
+                      onClick={() => {
+                        setEditingProject(null);
+                        setEditingProjectPage(1);
+                        resetProjectForm();
+                        setCurrentView('edit-project');
+                      }}
+                      title="Add new project here"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

@@ -82,9 +82,24 @@ class CloudinaryService {
       // Use signed upload since unsigned presets are not whitelisted
       const timestamp = Math.round(new Date().getTime() / 1000);
       
+      // Build parameters to sign
       const paramsToSign = {
         timestamp: timestamp
       };
+
+      // Add optional parameters for overwrite functionality
+      if (options.public_id) {
+        paramsToSign.public_id = options.public_id;
+      }
+      if (options.folder) {
+        paramsToSign.folder = options.folder;
+      }
+      if (options.overwrite) {
+        paramsToSign.overwrite = 'true';
+      }
+      if (options.tags) {
+        paramsToSign.tags = Array.isArray(options.tags) ? options.tags.join(',') : options.tags;
+      }
       
       const signature = await this.generateSignature(paramsToSign, this.apiSecret);
       
@@ -93,6 +108,21 @@ class CloudinaryService {
       formData.append('api_key', this.apiKey);
       formData.append('timestamp', timestamp);
       formData.append('signature', signature);
+
+      // Add optional parameters to form data
+      if (options.public_id) {
+        formData.append('public_id', options.public_id);
+      }
+      if (options.folder) {
+        formData.append('folder', options.folder);
+      }
+      if (options.overwrite) {
+        formData.append('overwrite', 'true');
+      }
+      if (options.tags) {
+        const tagsString = Array.isArray(options.tags) ? options.tags.join(',') : options.tags;
+        formData.append('tags', tagsString);
+      }
       
       console.log('🔍 Signed upload attempt:', {
         apiKey: this.apiKey,
