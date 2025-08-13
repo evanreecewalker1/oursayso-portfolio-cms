@@ -11,10 +11,12 @@ import HybridMediaService from './services/hybridMediaService';
 // Main CMS Component (authenticated)
 const CMSApp = () => {
   const buildTimestamp = new Date().toISOString();
+  console.log('🚀 ===== HYBRID MEDIA SYSTEM DEPLOYED ===== 🚀');
   console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
   console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
-  console.log('🆔 VERSION: 2024-08-13-v6-HYBRID');
+  console.log('🆔 VERSION: 2024-08-13-v6-HYBRID-FORCE-DEPLOY');
   console.log('⏰ LOADED AT:', new Date().toLocaleString());
+  console.log('🚀 ========================================== 🚀');
   const { user, logout } = useAuth();
   
   const [currentView, setCurrentView] = useState('dashboard');
