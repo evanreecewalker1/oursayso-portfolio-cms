@@ -2313,7 +2313,7 @@ const CMSApp = () => {
                 </div>
 
                 {/* Current File Preview */}
-                {projectForm.tileBackgroundFile && (
+                {projectForm.tileBackgroundFile && (projectForm.tileBackgroundFile.url || projectForm.tileBackgroundFile.preview) && (
                   <div className="current-file-preview">
                     <h4>Current File:</h4>
                     <div className="current-file">
@@ -2368,7 +2368,7 @@ const CMSApp = () => {
 
                 {/* Tile Upload Zone */}
                 <div className="upload-section">
-                  {!projectForm.tileBackgroundFile && projectForm.tileBackgroundType === 'image' ? (
+                  {(!projectForm.tileBackgroundFile || (!projectForm.tileBackgroundFile.url && !projectForm.tileBackgroundFile.preview)) && projectForm.tileBackgroundType === 'image' ? (
                     <div
                       className={`upload-zone ${dragOverFile === 'tileImage' ? 'drag-over' : ''} ${errors.tileImage ? 'error' : ''}`}
                       onDragEnter={(e) => handleFileDragEnter(e, 'tileImage')}
@@ -2399,7 +2399,7 @@ const CMSApp = () => {
                         style={{ display: 'none' }}
                       />
                     </div>
-                  ) : !projectForm.tileBackgroundFile && projectForm.tileBackgroundType === 'video' ? (
+                  ) : (!projectForm.tileBackgroundFile || (!projectForm.tileBackgroundFile.url && !projectForm.tileBackgroundFile.preview)) && projectForm.tileBackgroundType === 'video' ? (
                     <div
                       className={`upload-zone ${dragOverFile === 'tileVideo' ? 'drag-over' : ''} ${errors.tileVideo ? 'error' : ''}`}
                       onDragEnter={(e) => handleFileDragEnter(e, 'tileVideo')}
@@ -2435,7 +2435,7 @@ const CMSApp = () => {
                 <p className="bg-description">Background image for the project detail page (recommended: 1920x1080)</p>
                 
                 {/* Current Page Background Preview */}
-                {projectForm.pageBackgroundFile && (
+                {projectForm.pageBackgroundFile && (projectForm.pageBackgroundFile.url || projectForm.pageBackgroundFile.preview) && (
                   <div className="current-file-preview">
                     <h4>Current Background:</h4>
                     <div className="current-file">
@@ -2480,7 +2480,7 @@ const CMSApp = () => {
                   </div>
                 )}
                 
-                {!projectForm.pageBackgroundFile && (
+                {(!projectForm.pageBackgroundFile || (!projectForm.pageBackgroundFile.url && !projectForm.pageBackgroundFile.preview)) && (
                   <div
                     className={`upload-zone ${dragOverFile === 'pageBackground' ? 'drag-over' : ''} ${errors.pageBackground ? 'error' : ''}`}
                     onDragEnter={(e) => handleFileDragEnter(e, 'pageBackground')}
