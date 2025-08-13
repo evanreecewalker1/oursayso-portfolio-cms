@@ -79,6 +79,20 @@ class CloudinaryService {
         throw new Error('Monthly bandwidth limit would be exceeded');
       }
 
+      // For large video files, try unsigned upload first to avoid CORS issues
+      const isVideo = file.type.startsWith('video/');
+      const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB+
+      
+      if (isVideo && isLargeFile) {
+        console.log('🔄 Attempting unsigned upload for large video file');
+        try {
+          return await this.uploadMediaUnsigned(file, options);
+        } catch (unsignedError) {
+          console.warn('⚠️ Unsigned upload failed, trying signed upload:', unsignedError.message);
+          // Continue to signed upload as fallback
+        }
+      }
+
       // Use signed upload since unsigned presets are not whitelisted
       const timestamp = Math.round(new Date().getTime() / 1000);
       
@@ -194,6 +208,71 @@ class CloudinaryService {
 
     } catch (error) {
       console.error('❌ Upload failed:', error);
+      throw error;
+    }
+  }
+
+  // Unsigned upload method for large video files (to avoid CORS issues)
+  async uploadMediaUnsigned(file, options = {}) {
+    try {
+      console.log('📤 Unsigned upload to Cloudinary:', file.name, file.type);
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', this.uploadPreset);
+      
+      if (options.folder) {
+        formData.append('folder', options.folder);
+      }
+      if (options.tags) {
+        const tagsString = Array.isArray(options.tags) ? options.tags.join(',') : options.tags;
+        formData.append('tags', tagsString);
+      }
+
+      const isVideo = file.type.startsWith('video/');
+      const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
+      
+      console.log('🔍 Unsigned upload attempt:', {
+        uploadPreset: this.uploadPreset,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+        uploadUrl: uploadUrl
+      });
+
+      const response = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Unsigned upload error response:', errorText);
+        console.error('❌ Response status:', response.status, response.statusText);
+        throw new Error(`Unsigned upload failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      
+      // Track bandwidth usage
+      this.trackUsage(result.bytes || file.size);
+      
+      console.log('✅ Unsigned upload successful:', result.public_id);
+      
+      return {
+        publicId: result.public_id,
+        url: result.secure_url,
+        width: result.width,
+        height: result.height,
+        format: result.format,
+        bytes: result.bytes,
+        duration: result.duration, // For videos
+        resourceType: result.resource_type,
+        eager: result.eager || []
+      };
+
+    } catch (error) {
+      console.error('❌ Unsigned upload failed:', error);
       throw error;
     }
   }
