@@ -7,7 +7,7 @@ import { videoCodec } from '@cloudinary/url-gen/actions/transcode';
 // Initialize Cloudinary instance
 const cld = new Cloudinary({
   cloud: {
-    cloudName: process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'your-cloud-name'
+    cloudName: process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dnuni9dgl'
   }
 });
 
@@ -22,7 +22,7 @@ class CloudinaryService {
     this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'portfolio_simple';
     this.apiKey = process.env.REACT_APP_CLOUDINARY_API_KEY || '188545171796635';
     this.apiSecret = process.env.REACT_APP_CLOUDINARY_API_SECRET || 'B8lQJoL1N13A2b2LhBXrHiGUumY';
-    this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'ae2b4997c415d059a636c3d0cc4840';
+    this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dnuni9dgl';
     
     // Track bandwidth usage
     this.usage = {
