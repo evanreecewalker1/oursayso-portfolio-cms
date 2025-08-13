@@ -19,7 +19,7 @@ const STORAGE_LIMIT = 15 * 1024 * 1024 * 1024; // 15GB in bytes
 class CloudinaryService {
   constructor() {
     // Fallback to hardcoded values if environment variables are not available
-    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'fresc_signed';
+    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
     this.apiKey = process.env.REACT_APP_CLOUDINARY_API_KEY || '188545171796635';
     this.apiSecret = process.env.REACT_APP_CLOUDINARY_API_SECRET || 'B8lQJoL1N13A2b2LhBXrHiGUumY';
     this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dnuni9dgl';
@@ -58,45 +58,19 @@ class CloudinaryService {
         throw new Error('Monthly bandwidth limit would be exceeded');
       }
 
+      // Ultra minimal upload - just file and preset
       const formData = new FormData();
       formData.append('file', file);
       formData.append('upload_preset', this.uploadPreset);
       
-      // For signed uploads, add API key and timestamp
-      if (this.uploadPreset === 'fresc_signed') {
-        const timestamp = Math.round(new Date().getTime() / 1000);
-        formData.append('api_key', this.apiKey);
-        formData.append('timestamp', timestamp);
-        
-        console.log('🔍 Signed upload - added API key and timestamp:', {
-          uploadPreset: this.uploadPreset,
-          apiKey: this.apiKey,
-          timestamp: timestamp
-        });
-      }
-      
-      // Add debug logging
-      console.log('🔍 FormData contents:', {
+      console.log('🔍 Minimal upload attempt:', {
         uploadPreset: this.uploadPreset,
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type
       });
       
-      // Configure based on media type
       const isVideo = file.type.startsWith('video/');
-      
-      // Simplified parameters first - add optimizations only after basic upload works
-      if (isVideo) {
-        formData.append('resource_type', 'video');
-      } else {
-        formData.append('resource_type', 'image');
-      }
-
-      // Add folder organization
-      if (options.folder) {
-        formData.append('folder', options.folder);
-      }
 
       const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideo ? 'video' : 'image'}/upload`;
       
