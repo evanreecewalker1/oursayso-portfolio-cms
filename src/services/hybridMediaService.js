@@ -181,13 +181,21 @@ class HybridMediaService {
   // Get appropriate URL for display (handles both local and Cloudinary)
   getDisplayUrl(mediaItem) {
     if (mediaItem.storageType === 'local') {
-      try {
-        // For local files, get fresh URL from LocalFileManager (creates new blob URL)
-        const fileUrl = LocalFileManager.getFileUrl(mediaItem.localPath);
-        return fileUrl || mediaItem.preview || mediaItem.url || mediaItem.localPath;
-      } catch (error) {
-        console.error('Failed to get display URL for local file:', error);
-        return mediaItem.preview || mediaItem.url || mediaItem.localPath;
+      // For local files, prefer the local path over blob URLs to avoid lifecycle issues
+      // Only create blob URLs for immediate preview during upload
+      if (mediaItem.uploading) {
+        try {
+          // During upload, create fresh blob URL for immediate preview
+          const fileUrl = LocalFileManager.getFileUrl(mediaItem.localPath);
+          return fileUrl || mediaItem.preview || mediaItem.localPath;
+        } catch (error) {
+          console.error('Failed to get display URL for uploading local file:', error);
+          return mediaItem.preview || mediaItem.localPath;
+        }
+      } else {
+        // After successful upload, use the local path directly - no blob URLs
+        console.log('📁 Using local path for display (no blob URL):', mediaItem.localPath);
+        return mediaItem.localPath || mediaItem.preview;
       }
     } else {
       return mediaItem.url;

@@ -1068,9 +1068,11 @@ const CMSApp = () => {
         preview: (() => {
           if (result.storageType === 'local') {
             // For local files, use the local path directly - no blob URLs in persistent state
+            console.log('💾 Final local file preview set to local path:', result.localPath);
             return result.localPath || result.url;
           } else {
             // For Cloudinary, use direct URL
+            console.log('☁️ Final Cloudinary file preview set to URL:', result.url);
             return result.url;
           }
         })(),
@@ -1106,13 +1108,20 @@ const CMSApp = () => {
         }
       }
 
+      // For local files, clean up any blob URLs that might be lingering
+      if (result.storageType === 'local') {
+        console.log('🧹 Cleaning up blob URLs for local file after successful upload');
+        HybridMediaService.cleanupProjectBlobs(hybridOptions.projectId);
+      }
+
       console.log('🔄 DEBUG: Setting completed file state:', finalFileData);
       updateFileInForm(type, finalFileData);
-      console.log(`✅ Successfully uploaded ${type}:`, result.url);
+      console.log(`✅ Successfully uploaded ${type}:`, result.url || result.localPath);
       
       // Show success message
       const fileTypeDisplay = type.includes('tile') ? 'tile background' : 'page background';
-      setSuccessMessage(`✅ ${fileTypeDisplay} uploaded successfully to Cloudinary!`);
+      const storageLocation = result.storageType === 'local' ? 'local storage' : 'Cloudinary';
+      setSuccessMessage(`✅ ${fileTypeDisplay} uploaded successfully to ${storageLocation}!`);
       setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (error) {
