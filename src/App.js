@@ -782,7 +782,15 @@ const CMSApp = () => {
       description: project.description || '',
       tags: project.tags || [],
       tileBackgroundType: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
-      tileBackgroundFile: project.backgrounds?.tile?.file || project.tileBackgroundFile || null,
+      tileBackgroundFile: (() => {
+        const tileBackground = project.backgrounds?.tile?.file || project.tileBackgroundFile;
+        // If tile background exists but has a local file path (not Cloudinary URL), treat as null
+        if (tileBackground && tileBackground.url && (tileBackground.url.startsWith('/images/') || tileBackground.url.startsWith('/videos/'))) {
+          console.log('🔄 Ignoring invalid local tile background URL:', tileBackground.url);
+          return null;
+        }
+        return tileBackground || null;
+      })(),
       pageBackgroundFile: (() => {
         const pageBackground = project.backgrounds?.page || project.pageBackgroundFile;
         // If page background exists but has a local file path (not Cloudinary URL), treat as null
