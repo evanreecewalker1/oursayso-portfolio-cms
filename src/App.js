@@ -12,7 +12,34 @@ const CMSApp = () => {
   console.log('🔍 DEBUG: CMS App is loading - if you see this, debugging is working! Version: 2024-08-13-v5');
   const { user, logout } = useAuth();
   
-  const [currentView, setCurrentView] = useState('dashboard'); // 'dashboard', 'edit-project', 'edit-testimonials', 'settings'
+  const [currentView, setCurrentView] = useState('dashboard');
+  const [cacheVersion, setCacheVersion] = useState(Date.now());
+  
+  // Cache clearing function
+  const clearAppCache = () => {
+    // Clear localStorage
+    localStorage.removeItem('projects');
+    localStorage.removeItem('page2Projects');  
+    localStorage.removeItem('testimonials');
+    localStorage.removeItem('portfolio-data');
+    localStorage.removeItem('cloudinary-usage');
+    localStorage.removeItem('usage-reset-date');
+    
+    // Clear Service Worker cache if available
+    if ('caches' in window) {
+      caches.keys().then(names => {
+        names.forEach(name => {
+          caches.delete(name);
+        });
+      });
+    }
+    
+    // Update cache version to force refresh
+    setCacheVersion(Date.now());
+    
+    // Reload the page to start fresh
+    window.location.reload();
+  }; // 'dashboard', 'edit-project', 'edit-testimonials', 'settings'
   const [editingProjectPage, setEditingProjectPage] = useState(1); // Track which page the project being edited is on
   // eslint-disable-next-line no-unused-vars
   const [editingProject, setEditingProject] = useState(null);
@@ -784,11 +811,6 @@ const CMSApp = () => {
       tileBackgroundType: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
       tileBackgroundFile: (() => {
         const tileBackground = project.backgrounds?.tile?.file || project.tileBackgroundFile;
-        console.log('🔍 DEBUG: Processing tile background:', {
-          hasTileBackground: !!tileBackground,
-          url: tileBackground?.url,
-          urlType: tileBackground?.url ? (tileBackground.url.startsWith('http') ? 'cloudinary' : 'local') : 'none'
-        });
         // If tile background exists but has a local file path (not Cloudinary URL), treat as null
         if (tileBackground && tileBackground.url && (tileBackground.url.startsWith('/images/') || tileBackground.url.startsWith('/videos/'))) {
           console.log('🔄 Ignoring invalid local tile background URL:', tileBackground.url);
@@ -798,11 +820,6 @@ const CMSApp = () => {
       })(),
       pageBackgroundFile: (() => {
         const pageBackground = project.backgrounds?.page || project.pageBackgroundFile;
-        console.log('🔍 DEBUG: Processing page background:', {
-          hasPageBackground: !!pageBackground,
-          url: pageBackground?.url,
-          urlType: pageBackground?.url ? (pageBackground.url.startsWith('http') ? 'cloudinary' : 'local') : 'none'
-        });
         // If page background exists but has a local file path (not Cloudinary URL), treat as null
         if (pageBackground && pageBackground.url && pageBackground.url.startsWith('/images/')) {
           console.log('🔄 Ignoring invalid local page background URL:', pageBackground.url);
@@ -1414,25 +1431,21 @@ const CMSApp = () => {
       order: index,
       slug: project.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
       
-      // Background files
+      // Background files - use Cloudinary URLs directly, no local fallbacks
       tileBackground: {
         type: project.backgrounds?.tile?.type || project.tileBackgroundType || 'image',
-        url: project.backgrounds?.tile?.file 
-          ? (project.backgrounds.tile.file.cloudinary && project.backgrounds.tile.file.url) 
-            ? project.backgrounds.tile.file.url  // Use Cloudinary URL if available
-            : generateProjectFilePath(project.id, project.backgrounds.tile.file.name, 'tileBackground') // Fallback to local
-          : project.tileBackgroundFile?.cloudinary && project.tileBackgroundFile?.url
-            ? project.tileBackgroundFile.url  // Direct Cloudinary URL from form
-            : project.tileBackgroundFile 
-              ? generateProjectFilePath(project.id, project.tileBackgroundFile.name, 'tileBackground') // Fallback
-              : null
+        url: (() => {
+          const url = project.backgrounds?.tile?.file?.url || project.tileBackgroundFile?.url;
+          return url ? `${url}?v=${cacheVersion}` : null;
+        })()
       },
       
       pageBackground: {
-        url: project.backgrounds?.page 
-          ? generateProjectFilePath(project.id, project.backgrounds.page.name, 'pageBackground')
-          : null,
-        dimensions: project.backgrounds?.page?.dimensions || null
+        url: (() => {
+          const url = project.backgrounds?.page?.url || project.pageBackgroundFile?.url;
+          return url ? `${url}?v=${cacheVersion}` : null;
+        })(),
+        dimensions: project.backgrounds?.page?.dimensions || project.pageBackgroundFile?.dimensions || null
       },
       
       // Media items
@@ -2843,6 +2856,13 @@ const CMSApp = () => {
           </div>
         </div>
         <div className="header-actions">
+          <button 
+            className="btn btn-outline"
+            onClick={clearAppCache}
+            title="Clear all app cache and data"
+          >
+            🗑️ Clear Cache
+          </button>
           <button 
             className="btn btn-secondary"
             onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
