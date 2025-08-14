@@ -1851,6 +1851,19 @@ const CMSApp = () => {
                 });
                 return videoPath;
               }
+
+              // For documents (PDFs) stored in portfolio repository, use the repository path
+              if (item.type === 'pdf' && file.storageType === 'portfolio') {
+                const documentPath = file.url && file.url.startsWith('/documents/') ? file.url : `/documents/${file.name}`;
+                console.log(`📄 PRESERVING portfolio document path:`, {
+                  fileName: file.name,
+                  repositoryPath: documentPath,
+                  itemType: item.type,
+                  storageType: file.storageType,
+                  originalUrl: file.url
+                });
+                return documentPath;
+              }
               
               // For videos with repository URL paths
               if (item.type === 'video' && file.url && file.url.startsWith('/videos/')) {

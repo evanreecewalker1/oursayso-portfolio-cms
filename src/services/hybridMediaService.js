@@ -10,6 +10,7 @@ class HybridMediaService {
     // File type mappings
     this.imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'];
     this.videoTypes = ['mp4', 'mov', 'avi', 'webm', 'mkv', 'm4v'];
+    this.documentTypes = ['pdf', 'doc', 'docx', 'txt'];
     
     // Size thresholds
     this.imageCloudinaryMaxSize = 10 * 1024 * 1024; // 10MB - large images go local
@@ -21,12 +22,21 @@ class HybridMediaService {
     const extension = file.name.split('.').pop().toLowerCase();
     const fileSize = file.size;
 
-    // Video files always go local (solves upload size issues)
+    // Video files always go to portfolio repository for iPad access
     if (this.videoTypes.includes(extension)) {
       return {
         method: 'local',
         type: 'video',
-        reason: 'Video files stored locally for offline capability and size flexibility'
+        reason: 'Video files stored in portfolio repository for offline iPad capability'
+      };
+    }
+
+    // Document files (PDFs etc.) go to portfolio repository for iPad access
+    if (this.documentTypes.includes(extension)) {
+      return {
+        method: 'local',
+        type: 'document',
+        reason: 'Document files stored in portfolio repository for iPad access'
       };
     }
 
@@ -124,15 +134,23 @@ class HybridMediaService {
     console.log('💾 Storing to portfolio repository:', file.name);
 
     const projectId = options.projectId || 'general';
-    const isVideo = this.videoTypes.includes(file.name.split('.').pop().toLowerCase());
+    const extension = file.name.split('.').pop().toLowerCase();
+    const isVideo = this.videoTypes.includes(extension);
+    const isDocument = this.documentTypes.includes(extension);
     
     try {
       let repositoryResult;
       
-      if (isVideo) {
-        // Store videos in the portfolio repository for iPad offline access
-        console.log('🎬 Writing video to portfolio repository...');
-        repositoryResult = await PortfolioRepositoryService.writeVideoToRepository(file, projectId, file.name);
+      if (isVideo || isDocument) {
+        // Store videos and documents in the portfolio repository for iPad access
+        const fileType = isVideo ? 'video' : 'document';
+        console.log(`📄 Writing ${fileType} to portfolio repository...`);
+        
+        if (isVideo) {
+          repositoryResult = await PortfolioRepositoryService.writeVideoToRepository(file, projectId, file.name);
+        } else {
+          repositoryResult = await PortfolioRepositoryService.writeDocumentToRepository(file, projectId, file.name);
+        }
         
         // Also store in local manager for immediate CMS preview
         await LocalFileManager.saveFile(file, repositoryResult.localPath);
@@ -140,7 +158,7 @@ class HybridMediaService {
         // Trigger portfolio deployment
         await PortfolioRepositoryService.triggerPortfolioDeployment(
           repositoryResult.commitSha,
-          `Add video: ${file.name} for project ${projectId}`
+          `Add ${fileType}: ${file.name} for project ${projectId}`
         );
         
       } else {
@@ -169,7 +187,7 @@ class HybridMediaService {
         format: file.name.split('.').pop().toLowerCase(),
         bytes: file.size,
         duration: null, // Would be extracted for videos
-        resourceType: isVideo ? 'video' : 'image',
+        resourceType: isVideo ? 'video' : isDocument ? 'raw' : 'image',
         storageType: 'portfolio', // New storage type for portfolio repository
         uploadedAt: new Date().toISOString(),
         

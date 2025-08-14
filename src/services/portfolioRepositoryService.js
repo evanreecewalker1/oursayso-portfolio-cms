@@ -14,6 +14,7 @@ class PortfolioRepositoryService {
     
     // Portfolio repository structure
     this.videosPath = 'public/videos';
+    this.documentsPath = 'public/documents';
     this.projectsPath = 'public/projects';
     this.dataPath = 'public/data';
     
@@ -77,6 +78,49 @@ class PortfolioRepositoryService {
       };
     } catch (error) {
       console.error('❌ Failed to upload video to GitHub repository:', error);
+      throw error;
+    }
+  }
+
+  // Write document file (PDF, etc.) to GitHub repository via API
+  async writeDocumentToRepository(file, projectId, fileName) {
+    try {
+      console.log('📄 Uploading document to GitHub repository:', fileName);
+      
+      // Check authentication
+      if (!this.githubToken) {
+        throw new Error('GitHub token not configured. Please set REACT_APP_GITHUB_TOKEN environment variable.');
+      }
+      
+      // Check file size
+      if (file.size > this.maxFileSize) {
+        console.warn(`⚠️ File size ${this.formatFileSize(file.size)} exceeds GitHub API limit of ${this.formatFileSize(this.maxFileSize)}`);
+        throw new Error(`File too large for GitHub API. Maximum size: ${this.formatFileSize(this.maxFileSize)}`);
+      }
+      
+      // Create the target path for the document
+      const documentFileName = `${projectId}-${Date.now()}-${this.sanitizeFileName(fileName)}`;
+      const githubPath = `${this.documentsPath}/${documentFileName}`;
+      
+      // Upload the file to GitHub
+      const uploadResult = await this.uploadFileToGitHub(file, githubPath);
+      
+      console.log('✅ Document uploaded to GitHub repository:', githubPath);
+      console.log('📝 Portfolio app will access it via:', `/documents/${documentFileName}`);
+      console.log('🔗 GitHub commit:', uploadResult.commit.html_url);
+      
+      return {
+        success: true,
+        localPath: `/documents/${documentFileName}`,
+        absolutePath: githubPath,
+        fileName: documentFileName,
+        size: file.size,
+        type: file.type,
+        commitSha: uploadResult.commit.sha,
+        commitUrl: uploadResult.commit.html_url
+      };
+    } catch (error) {
+      console.error('❌ Failed to upload document to GitHub repository:', error);
       throw error;
     }
   }
