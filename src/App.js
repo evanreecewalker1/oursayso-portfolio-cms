@@ -1354,16 +1354,37 @@ const CMSApp = () => {
       
       // Update the gallery with new images
       if (uploadedFiles.length > 0) {
+        // Update projectForm for current editing
         setProjectForm(prev => ({
           ...prev,
           mediaItems: prev.mediaItems.map(item => 
             item.id === galleryId ? {
               ...item,
               images: [...(item.images || []), ...uploadedFiles],
+              files: [...(item.images || []), ...uploadedFiles], // Keep both arrays in sync
               title: `🖼️ Project Gallery (${(item.images?.length || 0) + uploadedFiles.length} images)`
             } : item
           )
         }));
+        
+        // CRITICAL: Also update the main projects state for auto-save
+        if (projectForm.id) {
+          setProjects(prev => prev.map(project => 
+            project.id === projectForm.id ? {
+              ...project,
+              mediaItems: project.mediaItems.map(item => 
+                item.id === galleryId ? {
+                  ...item,
+                  images: [...(item.images || []), ...uploadedFiles],
+                  files: [...(item.images || []), ...uploadedFiles], // Keep both arrays in sync
+                  title: `🖼️ Project Gallery (${(item.images?.length || 0) + uploadedFiles.length} images)`
+                } : item
+              )
+            } : project
+          ));
+          
+          console.log('✅ Updated main projects state for auto-save');
+        }
         
         console.log(`✅ Added ${uploadedFiles.length} images to gallery`);
       }
