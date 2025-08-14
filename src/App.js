@@ -24,6 +24,26 @@ const CMSApp = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [cacheVersion, setCacheVersion] = useState(Date.now());
   
+  // Dynamic status bar state
+  const [statusMessage, setStatusMessage] = useState('');
+  const [statusType, setStatusType] = useState('info'); // 'info', 'success', 'error', 'warning'
+  
+  // Auto-scroll and status management
+  const updateStatus = (msg, type = 'info', duration = 3000) => {
+    setStatusMessage(msg);
+    setStatusType(type);
+    if (duration > 0) {
+      setTimeout(() => {
+        setStatusMessage('');
+        setStatusType('info');
+      }, duration);
+    }
+  };
+  
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
   // Cache clearing function
   // Handle manual Cloudinary URL input for large videos
   const handleManualUrl = (url, type) => {
@@ -1224,6 +1244,15 @@ const CMSApp = () => {
       ...prev,
       mediaItems: [...prev.mediaItems, newItem]
     }));
+    
+    // Auto-scroll to the new media item
+    setTimeout(() => {
+      const mediaItems = document.querySelectorAll('.media-item');
+      const newMediaItem = mediaItems[mediaItems.length - 1];
+      if (newMediaItem) {
+        newMediaItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const updateMediaItem = (id, updates) => {
@@ -1491,6 +1520,7 @@ const CMSApp = () => {
     console.log('🔍 DEBUG: editingProjectPage:', editingProjectPage);
 
     setIsSaving(true);
+    updateStatus('💾 Saving project...', 'info', 0);
     
     try {
       // Simulate API call
@@ -1605,17 +1635,21 @@ const CMSApp = () => {
         console.log('🔍 DEBUG: Current projects after update:', editingProjectPage === 1 ? projects : page2Projects);
         
         setSuccessMessage(`Project "${newProject.title}" has been updated successfully.`);
+        updateStatus(`✅ Project "${newProject.title}" updated successfully!`, 'success', 5000);
       } else {
         // Add new project - determine which page to add to
         const projectStatus = getProjectCountStatus();
         if (!projectStatus.page1.atLimit) {
           setProjects(prev => [...prev, newProject]);
           setSuccessMessage(`Project "${newProject.title}" has been created successfully.`);
+          updateStatus(`✅ Project "${newProject.title}" created successfully!`, 'success', 5000);
         } else if (!projectStatus.page2.atLimit) {
           setPage2Projects(prev => [...prev, newProject]);
           setSuccessMessage(`Project "${newProject.title}" has been created on Page 2.`);
+          updateStatus(`✅ Project "${newProject.title}" created on Page 2!`, 'success', 5000);
         } else {
           setErrors({ general: 'All project pages are full. Delete a project to add a new one.' });
+          updateStatus('❌ All project pages are full!', 'error', 5000);
           return;
         }
       }
@@ -1623,6 +1657,9 @@ const CMSApp = () => {
       // Update form state to reflect saved data
       setInitialFormState(JSON.stringify(projectForm));
       setHasUnsavedChanges(false);
+      
+      // Auto-scroll to top on save
+      scrollToTop();
 
       // Verify state after React update cycle
       setTimeout(() => {
@@ -1633,6 +1670,8 @@ const CMSApp = () => {
       if (saveAndClose) {
         setCurrentView('dashboard');
         resetProjectForm();
+        // Additional scroll to top when returning to dashboard
+        setTimeout(() => scrollToTop(), 100);
       }
       
       // Clear success message after 3 seconds
@@ -1641,6 +1680,7 @@ const CMSApp = () => {
     } catch (error) {
       console.error('Error saving project:', error);
       setErrors({ general: 'Failed to save project. Please try again.' });
+      updateStatus('❌ Failed to save project!', 'error', 5000);
     } finally {
       setIsSaving(false);
     }
@@ -2509,6 +2549,7 @@ const CMSApp = () => {
 
     // Show publish modal and start process
     setShowPublishModal(true);
+    updateStatus('🚀 Publishing portfolio...', 'info', 0);
     setPublishProgress({
       step: 0,
       message: 'Starting publish process...',
@@ -2539,6 +2580,8 @@ const CMSApp = () => {
           deployUrl: result.deployUrl,
           timestamp: result.timestamp
         }));
+        
+        updateStatus('✅ Portfolio published successfully!', 'success', 5000);
         
         // Update project statuses to 'published'
         setProjects(prev => prev.map(project => ({
@@ -2582,6 +2625,8 @@ const CMSApp = () => {
         errorType: errorType,
         originalError: error.message
       });
+      
+      updateStatus('❌ Publish failed!', 'error', 5000);
     }
   };
 
@@ -2633,9 +2678,9 @@ const CMSApp = () => {
           <div className="header-actions">
             <button 
               className="btn btn-secondary"
-              onClick={handlePreviewProject}
+              onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
             >
-              Preview Project
+              📈 View Dashboard
             </button>
           </div>
         </div>
@@ -3723,6 +3768,7 @@ const CMSApp = () => {
           setPage2Projects(prev => prev.filter(p => p.id !== projectId));
         }
         setSuccessMessage(`Project "${project.title}" has been deleted successfully.`);
+        updateStatus(`✅ Project "${project.title}" deleted successfully!`, 'success', 5000);
         setTimeout(() => setSuccessMessage(''), 3000);
       }
     }
@@ -3762,7 +3808,7 @@ const CMSApp = () => {
             onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
           >
             <Eye size={18} />
-            Preview
+            View Dashboard
           </button>
           <button 
             className={`btn ${isConfigured ? 'btn-success' : 'btn-warning'}`}
@@ -3775,6 +3821,15 @@ const CMSApp = () => {
           </button>
         </div>
       </div>
+
+      {/* Dynamic Status Bar */}
+      {statusMessage && (
+        <div className={`status-bar status-${statusType}`}>
+          <div className="status-content">
+            <span className="status-text">{statusMessage}</span>
+          </div>
+        </div>
+      )}
 
       <div className="cms-content">
         {/* Success Message */}

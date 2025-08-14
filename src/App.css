@@ -102,6 +102,64 @@ body {
   letter-spacing: 0.5px;
 }
 
+/* Dynamic Status Bar */
+.status-bar {
+  padding: 0.75rem 2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  animation: statusSlideIn 0.3s ease-out;
+}
+
+.status-bar.status-info {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border-left: 4px solid #1d4ed8;
+}
+
+.status-bar.status-success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-left: 4px solid #10b981;
+}
+
+.status-bar.status-error {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border-left: 4px solid #dc2626;
+}
+
+.status-bar.status-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-left: 4px solid #f59e0b;
+}
+
+.status-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.status-text {
+  font-weight: 500;
+}
+
+@keyframes statusSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Content */
 .cms-content {
   padding: 2rem;
