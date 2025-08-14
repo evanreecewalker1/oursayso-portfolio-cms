@@ -1227,12 +1227,39 @@ const CMSApp = () => {
   };
 
   const updateMediaItem = (id, updates) => {
+    console.log(`🔧 Updating media item ${id} with:`, updates);
+    
     setProjectForm(prev => ({
       ...prev,
       mediaItems: prev.mediaItems.map(item =>
         item.id === id ? { ...item, ...updates } : item
       )
     }));
+    
+    // CRITICAL: Also update the main projects state for auto-save and publish
+    if (projectForm.id) {
+      if (editingProjectPage === 1) {
+        setProjects(prev => prev.map(project => 
+          project.id === projectForm.id ? {
+            ...project,
+            mediaItems: project.mediaItems.map(item => 
+              item.id === id ? { ...item, ...updates } : item
+            )
+          } : project
+        ));
+      } else {
+        setPage2Projects(prev => prev.map(project => 
+          project.id === projectForm.id ? {
+            ...project,
+            mediaItems: project.mediaItems.map(item => 
+              item.id === id ? { ...item, ...updates } : item
+            )
+          } : project
+        ));
+      }
+      
+      console.log(`✅ Updated media item in page ${editingProjectPage} projects state for auto-save`);
+    }
   };
 
   const removeMediaItem = (id) => {
@@ -3327,25 +3354,59 @@ const CMSApp = () => {
                           input.onchange = async (e) => {
                             const files = Array.from(e.target.files || []);
                             const uploadedFiles = [];
+                            
+                            console.log(`🎬 Starting upload of ${files.length} file(s) for media item ${item.id} (${item.type})`);
+                            
                             for (const file of files) {
                               try {
-                                const result = await HybridMediaService.uploadMedia(file, { projectId: projectForm.id });
-                                uploadedFiles.push(result);
+                                console.log(`📤 Uploading file: ${file.name} (${file.type}) for ${item.type} media item`);
+                                const result = await HybridMediaService.uploadMedia(file, { 
+                                  projectId: projectForm.id,
+                                  mediaItemType: item.type
+                                });
+                                
+                                console.log(`✅ Upload successful for ${file.name}:`, {
+                                  url: result.url,
+                                  storageType: result.storageType,
+                                  resourceType: result.resourceType
+                                });
+                                
+                                // Ensure the result has the required properties for video display
+                                const enhancedResult = {
+                                  ...result,
+                                  name: result.name || file.name,
+                                  type: result.type || file.type,
+                                  fileName: result.fileName || file.name // Add fileName for GitHub URL construction
+                                };
+                                
+                                uploadedFiles.push(enhancedResult);
                               } catch (error) {
-                                console.error('Upload failed:', error);
+                                console.error(`❌ Upload failed for ${file.name}:`, error);
                               }
                             }
+                            
+                            console.log(`🔍 Total uploaded files: ${uploadedFiles.length}`, uploadedFiles);
+                            
                             if (uploadedFiles.length > 0) {
                               // Check if this is gallery images and update title accordingly
                               if (item.type === 'gallery') {
                                 const imageCount = uploadedFiles.length;
+                                console.log(`🖼️ Updating gallery with ${imageCount} images`);
                                 updateMediaItem(item.id, { 
                                   files: uploadedFiles,
                                   title: `🖼️ Project Gallery (${imageCount} image${imageCount > 1 ? 's' : ''})`
                                 });
                               } else {
-                                updateMediaItem(item.id, { files: uploadedFiles });
+                                console.log(`🎬 Updating ${item.type} media item with ${uploadedFiles.length} files`);
+                                updateMediaItem(item.id, { 
+                                  files: uploadedFiles,
+                                  title: item.title || `${item.type} media`
+                                });
                               }
+                              
+                              console.log(`✅ Media item ${item.id} updated with files`);
+                            } else {
+                              console.log(`❌ No files were successfully uploaded for media item ${item.id}`);
                             }
                           };
                           input.click();
