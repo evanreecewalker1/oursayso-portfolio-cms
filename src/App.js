@@ -1245,6 +1245,82 @@ const CMSApp = () => {
     }));
   };
 
+  // Auto-group gallery images by filename patterns
+  const autoGroupGalleryImages = (uploadedFile, projectId) => {
+    const fileName = uploadedFile.name.toLowerCase();
+    const isImageFile = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+    
+    if (!isImageFile) return null;
+    
+    // Detect gallery patterns: gallery1, gallery 1, gallery_1, etc.
+    const galleryPattern = /^gallery[\s_-]*\d*/i;
+    const isGalleryImage = galleryPattern.test(fileName);
+    
+    if (!isGalleryImage) return null;
+    
+    // Find existing gallery item or create new one
+    let existingGallery = projectForm.mediaItems.find(item => 
+      item.type === 'gallery' && 
+      (item.title.toLowerCase().includes('gallery') || 
+       item.title === '' || 
+       item.title.toLowerCase() === 'untitled media')
+    );
+    
+    if (!existingGallery) {
+      // Create new gallery item
+      const newGalleryId = `gallery-${Date.now()}`;
+      existingGallery = {
+        id: newGalleryId,
+        type: 'gallery',
+        title: 'Project Gallery',
+        files: []
+      };
+      
+      setProjectForm(prev => ({
+        ...prev,
+        mediaItems: [...prev.mediaItems, existingGallery]
+      }));
+      
+      return newGalleryId;
+    }
+    
+    return existingGallery.id;
+  };
+  
+  // Enhanced media upload handler with auto-grouping
+  const handleMediaUpload = async (file, mediaItemId) => {
+    try {
+      console.log('📁 Starting media upload:', file.name);
+      
+      // Check if this should be auto-grouped into gallery
+      const galleryItemId = autoGroupGalleryImages(file, projectForm.id);
+      const targetItemId = galleryItemId || mediaItemId;
+      
+      // Upload via hybrid service
+      const result = await HybridMediaService.uploadMedia(file, { 
+        projectId: projectForm.id || 'temp' 
+      });
+      
+      console.log('✅ Media upload result:', result);
+      
+      // Add to appropriate media item
+      setProjectForm(prev => ({
+        ...prev,
+        mediaItems: prev.mediaItems.map(item => 
+          item.id === targetItemId ? {
+            ...item,
+            files: [...(item.files || []), result]
+          } : item
+        )
+      }));
+      
+      return result;
+    } catch (error) {
+      console.error('❌ Media upload failed:', error);
+      throw error;
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     
@@ -2530,13 +2606,16 @@ const CMSApp = () => {
                                 src={(() => {
                                   let displayUrl;
                                   if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
-                                    // For portfolio repository files, use the GitHub raw URL for immediate preview
-                                    const fileName = projectForm.tileBackgroundFile.fileName || projectForm.tileBackgroundFile.name;
+                                    // For portfolio repository files, construct the GitHub raw URL 
+                                    // The fileName should be available from the GitHub upload result
+                                    const fileName = projectForm.tileBackgroundFile.fileName || 
+                                                   projectForm.tileBackgroundFile.localPath?.split('/').pop() ||
+                                                   projectForm.tileBackgroundFile.name;
                                     displayUrl = `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public/videos/${fileName}`;
-                                    console.log('📁 Portfolio video preview URL:', displayUrl);
+                                    console.log('🎯 GitHub video preview URL:', displayUrl);
                                   } else if (projectForm.tileBackgroundFile.storageType === 'local') {
                                     displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
-                                    console.log('🎬 Local video preview URL:', displayUrl);
+                                    console.log('💾 Local video preview URL:', displayUrl);
                                   } else {
                                     displayUrl = projectForm.tileBackgroundFile.url;
                                     console.log('☁️ Cloudinary video preview URL:', displayUrl);
@@ -2802,28 +2881,75 @@ const CMSApp = () => {
               <h3>Upload Media to Cloudinary</h3>
               <MediaUploader 
                 onUploadComplete={(result, item) => {
-                  // Add uploaded media to project
-                  const newMediaItem = {
-                    id: Date.now().toString(),
-                    type: item.file.type.startsWith('video/') ? 'video' : 'image',
-                    title: item.name.replace(/\.[^/.]+$/, ''), // Remove file extension
-                    files: [{
-                      id: Date.now().toString(),
-                      name: item.name,
-                      type: item.file.type,
-                      url: result.url,
-                      cloudinaryId: result.publicId,
-                      size: result.bytes,
-                      uploadedAt: new Date().toISOString()
-                    }]
+                  // Create file object for auto-grouping logic
+                  const uploadedFile = {
+                    name: item.name,
+                    type: item.file.type,
+                    size: result.bytes,
+                    url: result.url,
+                    cloudinaryId: result.publicId,
+                    uploadedAt: new Date().toISOString(),
+                    storageType: 'cloudinary'
                   };
                   
-                  setProjectForm(prev => ({
-                    ...prev,
-                    mediaItems: [...prev.mediaItems, newMediaItem]
-                  }));
+                  // Check for gallery auto-grouping
+                  const fileName = item.name.toLowerCase();
+                  const isImageFile = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+                  const galleryPattern = /^gallery[\s_-]*\d*/i;
+                  const isGalleryImage = isImageFile && galleryPattern.test(fileName);
                   
-                  console.log('✅ Media uploaded and added to project:', newMediaItem);
+                  if (isGalleryImage) {
+                    // Find existing gallery or create new one
+                    setProjectForm(prev => {
+                      let existingGallery = prev.mediaItems.find(item => 
+                        item.type === 'gallery' && 
+                        (item.title.toLowerCase().includes('gallery') || 
+                         item.title === '' || 
+                         item.title.toLowerCase() === 'untitled media')
+                      );
+                      
+                      if (existingGallery) {
+                        // Add to existing gallery
+                        return {
+                          ...prev,
+                          mediaItems: prev.mediaItems.map(mediaItem => 
+                            mediaItem.id === existingGallery.id ? {
+                              ...mediaItem,
+                              title: `🖼️ Project Gallery (${(mediaItem.files?.length || 0) + 1} images)`,
+                              files: [...(mediaItem.files || []), uploadedFile]
+                            } : mediaItem
+                          )
+                        };
+                      } else {
+                        // Create new gallery
+                        const newGallery = {
+                          id: `gallery-${Date.now()}`,
+                          type: 'gallery',
+                          title: '🖼️ Project Gallery (1 image)',
+                          files: [uploadedFile]
+                        };
+                        return {
+                          ...prev,
+                          mediaItems: [...prev.mediaItems, newGallery]
+                        };
+                      }
+                    });
+                  } else {
+                    // Create individual media item for non-gallery content
+                    const newMediaItem = {
+                      id: Date.now().toString(),
+                      type: item.file.type.startsWith('video/') ? 'video' : 'image',
+                      title: item.name.replace(/\.[^/.]+$/, ''), // Remove file extension
+                      files: [uploadedFile]
+                    };
+                    
+                    setProjectForm(prev => ({
+                      ...prev,
+                      mediaItems: [...prev.mediaItems, newMediaItem]
+                    }));
+                    
+                    console.log('✅ Media uploaded and added to project:', newMediaItem);
+                  }
                 }}
                 maxFiles={5}
                 acceptedTypes="image/*,video/*"
@@ -2909,8 +3035,25 @@ const CMSApp = () => {
                               for (const file of files) {
                                 try {
                                   const result = await HybridMediaService.uploadMedia(file, { projectId: projectForm.id });
-                                  const updatedFiles = [...(item.files || []), result];
-                                  updateMediaItem(item.id, { files: updatedFiles });
+                                  
+                                  // Check for gallery auto-grouping for images
+                                  const fileName = file.name.toLowerCase();
+                                  const isImageFile = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
+                                  const galleryPattern = /^gallery[\s_-]*\d*/i;
+                                  const isGalleryImage = isImageFile && galleryPattern.test(fileName);
+                                  
+                                  if (isGalleryImage && item.type === 'gallery') {
+                                    // Update gallery title with image count
+                                    const newCount = (item.files?.length || 0) + 1;
+                                    const updatedFiles = [...(item.files || []), result];
+                                    updateMediaItem(item.id, { 
+                                      files: updatedFiles,
+                                      title: `🖼️ Project Gallery (${newCount} images)`
+                                    });
+                                  } else {
+                                    const updatedFiles = [...(item.files || []), result];
+                                    updateMediaItem(item.id, { files: updatedFiles });
+                                  }
                                 } catch (error) {
                                   console.error('Upload failed:', error);
                                 }
@@ -2941,7 +3084,16 @@ const CMSApp = () => {
                               }
                             }
                             if (uploadedFiles.length > 0) {
-                              updateMediaItem(item.id, { files: uploadedFiles });
+                              // Check if this is gallery images and update title accordingly
+                              if (item.type === 'gallery') {
+                                const imageCount = uploadedFiles.length;
+                                updateMediaItem(item.id, { 
+                                  files: uploadedFiles,
+                                  title: `🖼️ Project Gallery (${imageCount} image${imageCount > 1 ? 's' : ''})`
+                                });
+                              } else {
+                                updateMediaItem(item.id, { files: uploadedFiles });
+                              }
                             }
                           };
                           input.click();
@@ -3153,18 +3305,38 @@ const CMSApp = () => {
                                           )}
                                         </div>
                                       ) : item.type === 'video' ? (
-                                        <div className="video-thumbnail">
+                                        <div className="video-thumbnail-enhanced">
                                           <video 
-                                            src={item.files[0].url || item.files[0].preview}
+                                            src={(() => {
+                                              const videoFile = item.files[0];
+                                              if (videoFile.storageType === 'portfolio' && videoFile.fileName) {
+                                                // Use GitHub raw URL for immediate preview
+                                                return `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public/videos/${videoFile.fileName}`;
+                                              }
+                                              return videoFile.url || videoFile.preview;
+                                            })()}
                                             style={{
                                               width: '100%',
-                                              height: '80px',
+                                              height: '120px',
                                               objectFit: 'cover',
-                                              borderRadius: '4px'
+                                              borderRadius: '8px',
+                                              border: '2px solid #e5e7eb'
                                             }}
+                                            controls
                                             muted
+                                            preload="metadata"
+                                            onLoadedData={() => console.log('✅ Video preview loaded')}
+                                            onError={(e) => console.error('❌ Video preview error:', e)}
                                           />
-                                          <div className="video-overlay">▶️</div>
+                                          <div className="video-info-overlay">
+                                            <div className="video-title">{item.title}</div>
+                                            <div className="video-status">
+                                              {item.files[0].storageType === 'portfolio' ? 
+                                                '🎯 iPad Ready' : 
+                                                '☁️ Cloudinary'
+                                              }
+                                            </div>
+                                          </div>
                                         </div>
                                       ) : (
                                         <div className="file-icon">📁 {item.files.length} file(s)</div>

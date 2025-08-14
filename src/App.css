@@ -2619,6 +2619,48 @@ body {
   font-size: 1.2rem;
 }
 
+/* Enhanced Video Thumbnail with Controls */
+.video-thumbnail-enhanced {
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  transition: all 0.3s ease;
+}
+
+.video-thumbnail-enhanced:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transform: translateY(-2px);
+}
+
+.video-info-overlay {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.video-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.video-status {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
 .upload-success-mini {
   display: flex;
   align-items: center;
