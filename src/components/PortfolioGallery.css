@@ -1,0 +1,617 @@
+/* Portfolio Gallery Component */
+.portfolio-gallery {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  font-family: 'Helvetica Neue', 'Arial', sans-serif;
+  user-select: none;
+}
+
+/* Empty Gallery State */
+.portfolio-gallery.empty {
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-gallery {
+  text-align: center;
+  color: white;
+}
+
+.gallery-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.empty-gallery h3 {
+  font-size: 1.5rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 300;
+}
+
+.empty-gallery p {
+  font-size: 1rem;
+  opacity: 0.7;
+  margin: 0;
+}
+
+/* Gallery Header */
+.gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  position: relative;
+  z-index: 10;
+}
+
+.gallery-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.gallery-title {
+  font-size: 1.25rem;
+  font-weight: 300;
+  color: white;
+  margin: 0;
+}
+
+.image-counter {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+.gallery-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Minimal White CSS Icons */
+.play-pause-btn, .close-btn, .nav-arrow {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.play-pause-btn:hover, .close-btn:hover, .nav-arrow:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.1);
+}
+
+.play-pause-btn:active, .close-btn:active, .nav-arrow:active:not(.disabled) {
+  transform: scale(0.95);
+}
+
+/* Play/Pause Icon */
+.play-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 0 8px 12px;
+  border-color: transparent transparent transparent white;
+  margin-left: 2px;
+}
+
+.pause-icon {
+  display: flex;
+  gap: 2px;
+}
+
+.pause-icon::before,
+.pause-icon::after {
+  content: '';
+  width: 3px;
+  height: 16px;
+  background: white;
+}
+
+/* Close Icon */
+.close-icon {
+  position: relative;
+  width: 16px;
+  height: 16px;
+}
+
+.close-icon::before,
+.close-icon::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 2px;
+  background: white;
+  top: 7px;
+  left: 0;
+}
+
+.close-icon::before {
+  transform: rotate(45deg);
+}
+
+.close-icon::after {
+  transform: rotate(-45deg);
+}
+
+/* Main Gallery Display */
+.gallery-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery-main.transitioning {
+  pointer-events: none;
+}
+
+.gallery-main.transitioning .main-image {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.gallery-main.next .main-image {
+  transform: translateX(-20px);
+  opacity: 0.8;
+}
+
+.gallery-main.prev .main-image {
+  transform: translateX(20px);
+  opacity: 0.8;
+}
+
+.image-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-image {
+  max-width: 95%;
+  max-height: 85%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Navigation Arrows */
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 60px;
+  z-index: 5;
+}
+
+.nav-arrow.prev {
+  left: 2rem;
+}
+
+.nav-arrow.next {
+  right: 2rem;
+}
+
+.nav-arrow.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Arrow Icons */
+.arrow-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.arrow-icon.left {
+  border-width: 10px 14px 10px 0;
+  border-color: transparent white transparent transparent;
+}
+
+.arrow-icon.right {
+  border-width: 10px 0 10px 14px;
+  border-color: transparent transparent transparent white;
+}
+
+/* End Stop Indicator */
+.end-stop-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+  animation: endStopPulse 0.5s ease-out;
+  z-index: 10;
+}
+
+@keyframes endStopPulse {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.end-stop-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.end-stop-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.end-stop-text {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+
+.end-stop-subtext {
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+/* Progress Indicator */
+.gallery-progress {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.2);
+  position: relative;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #0081f9, #00d4ff);
+  transition: width 0.3s ease;
+  border-radius: 0 3px 3px 0;
+}
+
+/* Thumbnail Strip */
+.thumbnail-strip {
+  padding: 1rem;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+}
+
+.thumbnails-container {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.thumbnails-container::-webkit-scrollbar {
+  display: none;
+}
+
+.thumbnail {
+  position: relative;
+  background: none;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+}
+
+.thumbnail:hover {
+  border-color: rgba(255, 255, 255, 0.6);
+  transform: scale(1.1);
+}
+
+.thumbnail.active {
+  border-color: #0081f9;
+  box-shadow: 0 0 20px rgba(0, 129, 249, 0.4);
+}
+
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.thumbnail-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(0, 129, 249, 0.3), rgba(0, 212, 255, 0.3));
+  border-radius: 6px;
+}
+
+/* Swipe Hint */
+.swipe-hint {
+  position: absolute;
+  bottom: 6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.875rem;
+  animation: swipeHintFade 3s ease-in-out infinite;
+}
+
+@keyframes swipeHintFade {
+  0%, 50%, 100% { opacity: 0.6; }
+  25%, 75% { opacity: 1; }
+}
+
+/* Swipe Icons */
+.swipe-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+}
+
+.swipe-icon::before {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.swipe-icon.left::before {
+  border-width: 6px 10px 6px 0;
+  border-color: transparent rgba(255, 255, 255, 0.6) transparent transparent;
+  animation: swipeLeft 2s ease-in-out infinite;
+}
+
+.swipe-icon.right::before {
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent rgba(255, 255, 255, 0.6);
+  animation: swipeRight 2s ease-in-out infinite;
+}
+
+@keyframes swipeLeft {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-70%, -50%); }
+}
+
+@keyframes swipeRight {
+  0%, 100% { transform: translate(-50%, -50%); }
+  50% { transform: translate(-30%, -50%); }
+}
+
+/* Responsive Design - iPad */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .gallery-header {
+    padding: 1.25rem 2rem;
+  }
+  
+  .gallery-title {
+    font-size: 1.5rem;
+  }
+  
+  .nav-arrow {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .nav-arrow.prev {
+    left: 3rem;
+  }
+  
+  .nav-arrow.next {
+    right: 3rem;
+  }
+  
+  .arrow-icon.left {
+    border-width: 12px 16px 12px 0;
+  }
+  
+  .arrow-icon.right {
+    border-width: 12px 0 12px 16px;
+  }
+  
+  .thumbnail {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .end-stop-indicator {
+    padding: 2.5rem;
+  }
+  
+  .end-stop-icon {
+    font-size: 2.5rem;
+  }
+  
+  .end-stop-text {
+    font-size: 1.5rem;
+  }
+}
+
+/* Mobile Portrait */
+@media (max-width: 768px) {
+  .gallery-header {
+    padding: 1rem;
+  }
+  
+  .gallery-title {
+    font-size: 1.125rem;
+  }
+  
+  .image-counter {
+    font-size: 0.75rem;
+  }
+  
+  .play-pause-btn, .close-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .nav-arrow {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .nav-arrow.prev {
+    left: 1rem;
+  }
+  
+  .nav-arrow.next {
+    right: 1rem;
+  }
+  
+  .arrow-icon.left {
+    border-width: 8px 12px 8px 0;
+  }
+  
+  .arrow-icon.right {
+    border-width: 8px 0 8px 12px;
+  }
+  
+  .main-image {
+    max-width: 98%;
+    max-height: 80%;
+  }
+  
+  .thumbnail {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .thumbnails-container {
+    gap: 0.5rem;
+  }
+  
+  .end-stop-indicator {
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+  
+  .end-stop-icon {
+    font-size: 1.75rem;
+  }
+  
+  .end-stop-text {
+    font-size: 1rem;
+  }
+  
+  .end-stop-subtext {
+    font-size: 0.75rem;
+  }
+  
+  .swipe-hint {
+    bottom: 4rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* Touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .nav-arrow {
+    opacity: 0.7;
+  }
+  
+  .nav-arrow:active:not(.disabled) {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .thumbnail:active {
+    transform: scale(0.95);
+  }
+  
+  .play-pause-btn:active, .close-btn:active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .portfolio-gallery {
+    background: black;
+  }
+  
+  .gallery-header {
+    background: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, transparent 100%);
+  }
+  
+  .play-pause-btn, .close-btn, .nav-arrow {
+    border-color: white;
+  }
+  
+  .end-stop-indicator {
+    background: black;
+    border-color: white;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .gallery-main.transitioning .main-image,
+  .progress-bar,
+  .thumbnail,
+  .nav-arrow,
+  .play-pause-btn,
+  .close-btn {
+    transition: none;
+  }
+  
+  .end-stop-indicator {
+    animation: none;
+  }
+  
+  .swipe-hint {
+    animation: none;
+    opacity: 0.6;
+  }
+  
+  .swipe-icon.left::before,
+  .swipe-icon.right::before {
+    animation: none;
+  }
+}

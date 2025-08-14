@@ -1,0 +1,733 @@
+/* Media Preview Component */
+.media-preview-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+}
+
+.media-preview-container {
+  background: rgba(0, 0, 0, 0.9);
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Header */
+.media-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.media-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.media-title {
+  color: white;
+  font-size: 1.25rem;
+  font-weight: 300;
+  margin: 0;
+}
+
+.media-type-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.media-type-label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.media-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+/* Minimal White CSS Icons */
+.close-btn, .fullscreen-btn, .play-pause-btn, .nav-arrow {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: white;
+}
+
+.close-btn:hover, .fullscreen-btn:hover, .play-pause-btn:hover, .nav-arrow:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
+}
+
+.close-btn:active, .fullscreen-btn:active, .play-pause-btn:active, .nav-arrow:active {
+  transform: scale(0.95);
+}
+
+/* Media Type Icons */
+.media-type-icon {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Video Icon */
+.video-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 0 6px 10px;
+  border-color: transparent transparent transparent white;
+}
+
+/* Image Icon */
+.image-icon {
+  width: 14px;
+  height: 11px;
+  background: white;
+  border-radius: 2px;
+  position: relative;
+}
+
+.image-icon::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: black;
+}
+
+.image-icon::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-bottom: 3px solid black;
+}
+
+/* PDF Icon */
+.pdf-icon {
+  width: 12px;
+  height: 14px;
+  background: white;
+  border-radius: 1px;
+  position: relative;
+}
+
+.pdf-icon::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  height: 1px;
+  background: black;
+  box-shadow: 0 2px 0 black, 0 4px 0 black;
+}
+
+/* File Icon */
+.file-icon {
+  width: 12px;
+  height: 14px;
+  background: white;
+  border-radius: 1px;
+  position: relative;
+}
+
+.file-icon::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 4px;
+  height: 4px;
+  background: black;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+/* Close Icon */
+.close-icon {
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+
+.close-icon::before,
+.close-icon::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 2px;
+  background: white;
+  top: 7px;
+  left: 0;
+}
+
+.close-icon::before {
+  transform: rotate(45deg);
+}
+
+.close-icon::after {
+  transform: rotate(-45deg);
+}
+
+/* Fullscreen Icon */
+.fullscreen-icon {
+  width: 14px;
+  height: 14px;
+  position: relative;
+}
+
+.fullscreen-icon::before,
+.fullscreen-icon::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 2px solid white;
+}
+
+.fullscreen-icon::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.fullscreen-icon::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+/* Media Content */
+.media-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  min-height: 60vh;
+}
+
+/* Image Container */
+.image-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* Video Container */
+.video-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.preview-video {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+
+.video-controls-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  padding: 1rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.video-container:hover .video-controls-overlay {
+  opacity: 1;
+}
+
+.video-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.play-pause-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+/* Play Icon */
+.play-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 8px 0 8px 12px;
+  border-color: transparent transparent transparent white;
+  margin-left: 2px;
+}
+
+/* Pause Icon */
+.pause-icon {
+  display: flex;
+  gap: 2px;
+}
+
+.pause-icon::before,
+.pause-icon::after {
+  content: '';
+  width: 3px;
+  height: 16px;
+  background: white;
+}
+
+.time-display {
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Volume Icon */
+.volume-icon {
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+
+.volume-icon::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 4px;
+  height: 4px;
+  background: white;
+}
+
+.volume-icon::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 0 4px 6px;
+  border-color: transparent transparent transparent white;
+}
+
+.volume-slider {
+  width: 60px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  outline: none;
+  appearance: none;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: white;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+}
+
+.progress-container {
+  cursor: pointer;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0081f9, #00d4ff);
+  transition: width 0.1s ease;
+}
+
+/* PDF Container */
+.pdf-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.pdf-preview {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.pdf-viewer {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+.pdf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 8px;
+}
+
+.pdf-info {
+  text-align: center;
+  color: white;
+}
+
+.pdf-icon-large {
+  width: 48px;
+  height: 56px;
+  background: white;
+  border-radius: 4px;
+  margin: 0 auto 1rem;
+  position: relative;
+}
+
+.pdf-icon-large::before {
+  content: 'PDF';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  font-weight: bold;
+  color: black;
+}
+
+.pdf-info h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 300;
+}
+
+.pdf-info p {
+  margin: 0 0 1.5rem 0;
+  opacity: 0.8;
+}
+
+.pdf-download-btn,
+.download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #0081f9;
+  color: white;
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.pdf-download-btn:hover,
+.download-btn:hover {
+  background: #0066cc;
+  transform: translateY(-2px);
+}
+
+/* Download Icon */
+.download-icon {
+  width: 16px;
+  height: 16px;
+  position: relative;
+}
+
+.download-icon::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 7px;
+  width: 2px;
+  height: 8px;
+  background: currentColor;
+}
+
+.download-icon::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 5px;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 4px 3px 0 3px;
+  border-color: currentColor transparent transparent transparent;
+}
+
+/* Unknown Media */
+.unknown-media {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.unknown-content {
+  text-align: center;
+  color: white;
+}
+
+.file-icon-large {
+  width: 48px;
+  height: 56px;
+  background: white;
+  border-radius: 4px;
+  margin: 0 auto 1rem;
+  position: relative;
+}
+
+.file-icon-large::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+.unknown-content h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 300;
+}
+
+.unknown-content p {
+  margin: 0 0 1.5rem 0;
+  opacity: 0.8;
+}
+
+/* Navigation Arrows */
+.nav-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  z-index: 5;
+}
+
+.nav-arrow.prev {
+  left: 1rem;
+}
+
+.nav-arrow.next {
+  right: 1rem;
+}
+
+/* Arrow Icons */
+.arrow-icon {
+  width: 0;
+  height: 0;
+  border-style: solid;
+}
+
+.arrow-icon.left {
+  border-width: 10px 14px 10px 0;
+  border-color: transparent white transparent transparent;
+}
+
+.arrow-icon.right {
+  border-width: 10px 0 10px 14px;
+  border-color: transparent transparent transparent white;
+}
+
+/* Footer */
+.media-footer {
+  padding: 1rem 1.5rem;
+  background: linear-gradient(0deg, rgba(255, 255, 255, 0.1) 0%, transparent 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.media-details {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.file-name,
+.file-size,
+.dimensions {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.875rem;
+}
+
+.file-name {
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .media-preview-overlay {
+    padding: 0.5rem;
+  }
+  
+  .media-header {
+    padding: 1rem;
+  }
+  
+  .media-title {
+    font-size: 1.125rem;
+  }
+  
+  .close-btn, .fullscreen-btn, .play-pause-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .nav-arrow {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .nav-arrow.prev {
+    left: 0.5rem;
+  }
+  
+  .nav-arrow.next {
+    right: 0.5rem;
+  }
+  
+  .video-controls {
+    gap: 0.75rem;
+  }
+  
+  .volume-slider {
+    width: 40px;
+  }
+  
+  .media-details {
+    gap: 0.75rem;
+  }
+  
+  .pdf-icon-large,
+  .file-icon-large {
+    width: 40px;
+    height: 48px;
+  }
+}
+
+/* Touch optimizations */
+@media (hover: none) and (pointer: coarse) {
+  .video-controls-overlay {
+    opacity: 1;
+  }
+  
+  .close-btn:active, .fullscreen-btn:active, .play-pause-btn:active, .nav-arrow:active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .media-preview-overlay {
+    background: black;
+  }
+  
+  .media-preview-container {
+    background: black;
+    border-color: white;
+  }
+  
+  .close-btn, .fullscreen-btn, .play-pause-btn, .nav-arrow {
+    border-color: white;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .close-btn, .fullscreen-btn, .play-pause-btn, .nav-arrow,
+  .pdf-download-btn, .download-btn, .progress-fill {
+    transition: none;
+  }
+}

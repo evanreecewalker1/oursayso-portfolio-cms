@@ -1,0 +1,274 @@
+/* iOS Install Prompt */
+.ios-install-prompt {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: promptFadeIn 0.3s ease-out;
+}
+
+@keyframes promptFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.ios-prompt-content {
+  background: #ffffff;
+  border-radius: 20px;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transform: translateY(0);
+  animation: promptSlideUp 0.4s ease-out;
+}
+
+@keyframes promptSlideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.ios-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 24px 16px 24px;
+  background: linear-gradient(135deg, #1652FB 0%, #0ea5e9 100%);
+  color: white;
+}
+
+.ios-prompt-logo {
+  height: 32px;
+  width: auto;
+  filter: brightness(0) invert(1);
+}
+
+.ios-prompt-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ios-prompt-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.ios-prompt-body {
+  padding: 24px;
+  text-align: center;
+}
+
+.ios-prompt-body h3 {
+  font-size: 24px;
+  color: #1e293b;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.ios-prompt-body p {
+  color: #64748b;
+  font-size: 16px;
+  line-height: 1.5;
+  margin: 0 0 24px 0;
+}
+
+.ios-install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.install-step {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.step-number {
+  background: #1652FB;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.install-step span {
+  flex: 1;
+  color: #334155;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.share-icon,
+.home-icon,
+.add-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ios-prompt-actions {
+  display: flex;
+  gap: 12px;
+  padding: 0 24px 24px 24px;
+}
+
+.ios-btn {
+  flex: 1;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-family: 'Barlow', sans-serif;
+}
+
+.ios-btn-secondary {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.ios-btn-secondary:hover {
+  background: #e2e8f0;
+  color: #475569;
+  transform: translateY(-1px);
+}
+
+.ios-btn-primary {
+  background: linear-gradient(135deg, #1652FB 0%, #0ea5e9 100%);
+  color: white;
+  box-shadow: 0 4px 14px rgba(22, 82, 251, 0.3);
+}
+
+.ios-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(22, 82, 251, 0.4);
+}
+
+.ios-btn-primary:active,
+.ios-btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* iPad specific adjustments */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .ios-prompt-content {
+    max-width: 520px;
+  }
+  
+  .ios-prompt-body h3 {
+    font-size: 28px;
+  }
+  
+  .ios-prompt-body p {
+    font-size: 18px;
+  }
+  
+  .install-step {
+    padding: 20px;
+  }
+  
+  .install-step span {
+    font-size: 17px;
+  }
+  
+  .ios-btn {
+    padding: 18px 28px;
+    font-size: 18px;
+  }
+}
+
+/* Smaller mobile screens */
+@media (max-width: 480px) {
+  .ios-install-prompt {
+    padding: 16px;
+  }
+  
+  .ios-prompt-content {
+    max-width: none;
+  }
+  
+  .ios-prompt-header {
+    padding: 20px 20px 12px 20px;
+  }
+  
+  .ios-prompt-body {
+    padding: 20px;
+  }
+  
+  .ios-prompt-body h3 {
+    font-size: 20px;
+  }
+  
+  .ios-prompt-body p {
+    font-size: 15px;
+  }
+  
+  .install-step {
+    padding: 14px;
+  }
+  
+  .step-number {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  
+  .install-step span {
+    font-size: 14px;
+  }
+  
+  .ios-prompt-actions {
+    padding: 0 20px 20px 20px;
+    flex-direction: column;
+  }
+  
+  .ios-btn {
+    padding: 14px 20px;
+    font-size: 15px;
+  }
+}

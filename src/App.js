@@ -4,6 +4,9 @@ import './App.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
 import BandwidthMonitor from './components/BandwidthMonitor';
+import IOSInstallPrompt from './components/IOSInstallPrompt';
+import PortfolioGallery from './components/PortfolioGallery';
+import MediaPreview from './components/MediaPreview';
 import CloudinaryService from './services/cloudinaryConfig';
 import HybridMediaService from './services/hybridMediaService';
 import ProjectDataService from './services/projectDataService';
@@ -1245,12 +1248,18 @@ const CMSApp = () => {
       mediaItems: [...prev.mediaItems, newItem]
     }));
     
-    // Auto-scroll to the new media item
+    // Auto-scroll to the new media item with status message
+    updateStatus('📎 New media item added - scroll down to edit!', 'info', 3000);
     setTimeout(() => {
       const mediaItems = document.querySelectorAll('.media-item');
       const newMediaItem = mediaItems[mediaItems.length - 1];
       if (newMediaItem) {
         newMediaItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Add a subtle highlight effect
+        newMediaItem.classList.add('new-item-highlight');
+        setTimeout(() => {
+          newMediaItem.classList.remove('new-item-highlight');
+        }, 2000);
       }
     }, 100);
   };
@@ -1520,7 +1529,7 @@ const CMSApp = () => {
     console.log('🔍 DEBUG: editingProjectPage:', editingProjectPage);
 
     setIsSaving(true);
-    updateStatus('💾 Saving project...', 'info', 0);
+    updateStatus('💾 Saving project...', 'saving', 0);
     
     try {
       // Simulate API call
@@ -1636,6 +1645,8 @@ const CMSApp = () => {
         
         setSuccessMessage(`Project "${newProject.title}" has been updated successfully.`);
         updateStatus(`✅ Project "${newProject.title}" updated successfully!`, 'success', 5000);
+        // Auto-scroll to top after successful save
+        scrollToTop();
       } else {
         // Add new project - determine which page to add to
         const projectStatus = getProjectCountStatus();
@@ -1643,10 +1654,14 @@ const CMSApp = () => {
           setProjects(prev => [...prev, newProject]);
           setSuccessMessage(`Project "${newProject.title}" has been created successfully.`);
           updateStatus(`✅ Project "${newProject.title}" created successfully!`, 'success', 5000);
+          // Auto-scroll to top after successful save
+          scrollToTop();
         } else if (!projectStatus.page2.atLimit) {
           setPage2Projects(prev => [...prev, newProject]);
           setSuccessMessage(`Project "${newProject.title}" has been created on Page 2.`);
           updateStatus(`✅ Project "${newProject.title}" created on Page 2!`, 'success', 5000);
+          // Auto-scroll to top after successful save
+          scrollToTop();
         } else {
           setErrors({ general: 'All project pages are full. Delete a project to add a new one.' });
           updateStatus('❌ All project pages are full!', 'error', 5000);
@@ -2549,7 +2564,7 @@ const CMSApp = () => {
 
     // Show publish modal and start process
     setShowPublishModal(true);
-    updateStatus('🚀 Publishing portfolio...', 'info', 0);
+    updateStatus('🚀 Publishing portfolio...', 'publishing', 0);
     setPublishProgress({
       step: 0,
       message: 'Starting publish process...',
@@ -3776,6 +3791,9 @@ const CMSApp = () => {
   
   return (
     <div className="cms-container">
+      {/* iOS Install Prompt */}
+      <IOSInstallPrompt />
+      
       {/* Header */}
       <div className="cms-header">
         <div className="header-left">
