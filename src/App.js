@@ -15,7 +15,7 @@ const CMSApp = () => {
   console.log('🚀 ===== HYBRID MEDIA SYSTEM DEPLOYED ===== 🚀');
   console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
   console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
-  console.log('🆔 VERSION: 2025-08-14-CRITICAL-ENCODING-FIX-DEPLOY');
+  console.log('🆔 VERSION: 2025-08-14-PDF-PREVIEW-PUBLISH-FIX-DEPLOY');
   console.log('⏰ LOADED AT:', new Date().toLocaleString());
   console.log('🚀 ========================================== 🚀');
   const { user, logout } = useAuth();
@@ -1605,6 +1605,11 @@ const CMSApp = () => {
 
   // Publish System Functions
   const generateProjectFilePath = (projectId, filename, type = 'image') => {
+    if (!filename) {
+      console.warn('⚠️ generateProjectFilePath called with undefined filename');
+      return `/projects/unknown/media/unknown-file`;
+    }
+    
     const sanitizedId = projectId.toString().toLowerCase().replace(/[^a-z0-9]/g, '-');
     const fileExtension = filename.split('.').pop().toLowerCase();
     
@@ -1678,7 +1683,7 @@ const CMSApp = () => {
         id: item.id,
         type: item.type,
         title: item.title,
-        files: (item.files || []).map(file => ({
+        files: (item.files || []).filter(file => file && file.name).map(file => ({
           url: generateProjectFilePath(project.id, file.name, 'media'),
           name: file.name,
           type: file.type
@@ -3072,7 +3077,7 @@ const CMSApp = () => {
                                     <span className="success-indicator">✅ {file.storageType === 'portfolio' ? 'iPad Ready' : 'Uploaded'}</span>
                                   </div>
                                 </div>
-                              ) : file.resourceType === 'raw' && file.name?.toLowerCase().endsWith('.pdf') || item.type === 'pdf' ? (
+                              ) : (file.resourceType === 'raw' && file.name?.toLowerCase().endsWith('.pdf')) || item.type === 'pdf' ? (
                                 <div className="pdf-preview">
                                   <iframe
                                     src={`${file.url || file.preview}#view=FitH`}
