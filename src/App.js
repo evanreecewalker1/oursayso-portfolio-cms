@@ -1733,6 +1733,16 @@ const CMSApp = () => {
                   return file.url;
                 }
                 
+                // For videos stored in repository, use the repository path  
+                if (file.url && file.url.startsWith('/videos/')) {
+                  console.log(`🎬 PRESERVING repository video path in gallery:`, {
+                    fileName: file.name,
+                    repositoryPath: file.url,
+                    storageType: file.storageType
+                  });
+                  return file.url;
+                }
+                
                 // For local files or files without URLs, use the generated path
                 const localPath = generateProjectFilePath(project.id, file.name, 'media');
                 console.log(`📁 USING local path for gallery file:`, {
@@ -1762,6 +1772,17 @@ const CMSApp = () => {
                 console.log(`☁️ PRESERVING Cloudinary URL for file:`, {
                   fileName: file.name,
                   originalUrl: file.url,
+                  itemType: item.type,
+                  storageType: file.storageType
+                });
+                return file.url;
+              }
+              
+              // For videos stored in repository, use the repository path
+              if (item.type === 'video' && file.url && file.url.startsWith('/videos/')) {
+                console.log(`🎬 PRESERVING repository video path:`, {
+                  fileName: file.name,
+                  repositoryPath: file.url,
                   itemType: item.type,
                   storageType: file.storageType
                 });
