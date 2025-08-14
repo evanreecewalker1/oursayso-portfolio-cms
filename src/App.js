@@ -1701,17 +1701,89 @@ const CMSApp = () => {
       },
       
       // Media items
-      mediaItems: (project.mediaItems || []).map(item => ({
-        id: item.id,
-        type: item.type,
-        title: item.title,
-        files: (item.files || []).filter(file => file && file.name).map(file => ({
-          url: generateProjectFilePath(project.id, file.name, 'media'),
-          name: file.name,
-          type: file.type
-        })),
-        order: item.order || 0
-      })),
+      mediaItems: (project.mediaItems || []).map(item => {
+        // Handle gallery items specially - they may have both files and images arrays
+        if (item.type === 'gallery') {
+          // Combine files from both 'files' and 'images' arrays for galleries
+          const allFiles = [
+            ...(item.files || []),
+            ...(item.images || [])
+          ].filter(file => file && file.name);
+          
+          console.log(`🖼️ GALLERY CONVERSION: Processing ${allFiles.length} gallery files:`, {
+            galleryId: item.id,
+            filesCount: (item.files || []).length,
+            imagesCount: (item.images || []).length,
+            allFilesCount: allFiles.length
+          });
+          
+          return {
+            id: item.id,
+            type: item.type,
+            title: item.title,
+            files: allFiles.map(file => ({
+              // CRITICAL FIX: Preserve Cloudinary URLs for gallery images
+              url: (() => {
+                if (file.url && file.url.includes('cloudinary.com')) {
+                  console.log(`🖼️ PRESERVING Cloudinary URL for gallery image:`, {
+                    fileName: file.name,
+                    originalUrl: file.url,
+                    storageType: file.storageType
+                  });
+                  return file.url;
+                }
+                
+                // For local files or files without URLs, use the generated path
+                const localPath = generateProjectFilePath(project.id, file.name, 'media');
+                console.log(`📁 USING local path for gallery file:`, {
+                  fileName: file.name,
+                  localPath: localPath,
+                  originalUrl: file.url || 'none'
+                });
+                return localPath;
+              })(),
+              name: file.name,
+              type: file.type
+            })),
+            order: item.order || 0
+          };
+        }
+        
+        // Handle non-gallery media items
+        return {
+          id: item.id,
+          type: item.type,
+          title: item.title,
+          files: (item.files || []).filter(file => file && file.name).map(file => ({
+            // CRITICAL FIX: Preserve Cloudinary URLs instead of forcing local paths
+            url: (() => {
+              // For files with Cloudinary URLs, preserve them
+              if (file.url && file.url.includes('cloudinary.com')) {
+                console.log(`☁️ PRESERVING Cloudinary URL for file:`, {
+                  fileName: file.name,
+                  originalUrl: file.url,
+                  itemType: item.type,
+                  storageType: file.storageType
+                });
+                return file.url;
+              }
+              
+              // For local files or files without URLs, use the generated path
+              const localPath = generateProjectFilePath(project.id, file.name, 'media');
+              console.log(`📁 USING local path for file:`, {
+                fileName: file.name,
+                localPath: localPath,
+                itemType: item.type,
+                originalUrl: file.url || 'none'
+              });
+              return localPath;
+            })(),
+            name: file.name,
+            type: file.type
+          })),
+          order: item.order || 0
+        };
+      }),
       
       // Metadata
       hasVideo: project.hasVideo || false,

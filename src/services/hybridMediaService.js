@@ -62,10 +62,27 @@ class HybridMediaService {
         fileName: file.name,
         size: this.formatFileSize(file.size),
         storageMethod: 'cloudinary (forced for gallery)',
-        reason: 'Gallery images must be on Cloudinary for portfolio display'
+        reason: 'Gallery images must be on Cloudinary for portfolio display',
+        optionsReceived: options
       });
       
-      return await this.uploadToCloudinary(file, options);
+      try {
+        const result = await this.uploadToCloudinary(file, options);
+        console.log(`✅ Gallery image Cloudinary result:`, {
+          fileName: file.name,
+          url: result.url,
+          storageType: result.storageType,
+          publicId: result.publicId
+        });
+        return result;
+      } catch (error) {
+        console.error(`❌ CRITICAL: Gallery Cloudinary upload failed:`, {
+          fileName: file.name,
+          error: error.message,
+          stack: error.stack
+        });
+        throw error; // Don't fallback for gallery images
+      }
     }
     
     const storageDecision = this.getStorageMethod(file);
