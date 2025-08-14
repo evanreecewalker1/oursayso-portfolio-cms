@@ -1240,6 +1240,18 @@ const CMSApp = () => {
       ...prev,
       mediaItems: prev.mediaItems.filter(item => item.id !== id)
     }));
+    
+    // CRITICAL: Also update the main projects state for auto-save and publish
+    if (projectForm.id) {
+      setProjects(prev => prev.map(project => 
+        project.id === projectForm.id ? {
+          ...project,
+          mediaItems: project.mediaItems.filter(item => item.id !== id)
+        } : project
+      ));
+      
+      console.log('✅ Removed media item from main projects state for auto-save');
+    }
   };
 
   // Auto-group gallery images by filename patterns
