@@ -106,6 +106,15 @@ const CMSApp = () => {
           page2Projects: data.page2Projects.length,
           testimonials: data.testimonials.length
         });
+        
+        // Debug: Check if projects have media items
+        data.projects.forEach((project, index) => {
+          if (project.mediaItems && project.mediaItems.length > 0) {
+            console.log(`📋 Project ${index + 1} "${project.title}" has ${project.mediaItems.length} media items:`, 
+              project.mediaItems.map(item => `${item.type}: ${item.files?.length || 0} files`)
+            );
+          }
+        });
       } catch (error) {
         console.error('❌ Failed to load project data:', error);
         // Fallback to default projects
@@ -840,6 +849,11 @@ const CMSApp = () => {
       mediaItems: project.mediaItems || []
     };
 
+    console.log('📝 Loading project with media items:', {
+      projectTitle: project.title,
+      mediaItemsCount: project.mediaItems?.length || 0,
+      mediaItems: project.mediaItems
+    });
 
     setProjectForm(formData);
     setInitialFormState(JSON.stringify(formData));
@@ -1313,6 +1327,7 @@ const CMSApp = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
 
   const handleSaveProject = async (saveAndClose = true) => {
     if (!validateForm()) return;
@@ -2974,11 +2989,32 @@ const CMSApp = () => {
                                   className="file-thumbnail"
                                 />
                               ) : file.resourceType === 'video' || item.type === 'video' ? (
-                                <video 
-                                  src={file.url || file.preview} 
-                                  className="file-thumbnail"
-                                  muted
-                                />
+                                <div className="media-video-preview">
+                                  <video 
+                                    src={(() => {
+                                      // For GitHub portfolio videos, use raw URL
+                                      if (file.storageType === 'portfolio' && file.fileName) {
+                                        return `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public/videos/${file.fileName}`;
+                                      }
+                                      return file.url || file.preview;
+                                    })()}
+                                    className="media-video-player"
+                                    controls
+                                    muted
+                                    preload="metadata"
+                                    style={{
+                                      width: '100%',
+                                      height: '80px',
+                                      borderRadius: '4px',
+                                      background: '#000'
+                                    }}
+                                    onLoadedData={() => console.log('✅ Media video preview loaded:', file.name)}
+                                    onError={(e) => console.error('❌ Media video preview error:', file.name, e)}
+                                  />
+                                  <div className="video-upload-success">
+                                    <span className="success-indicator">✅ {file.storageType === 'portfolio' ? 'iPad Ready' : 'Uploaded'}</span>
+                                  </div>
+                                </div>
                               ) : (
                                 <div className="file-icon-preview">
                                   <File size={32} />
