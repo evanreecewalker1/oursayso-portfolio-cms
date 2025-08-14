@@ -1,44 +1,82 @@
 // Portfolio Repository Service
-// Handles writing files directly to the portfolio repository and managing Git operations
+// Handles uploading files to GitHub repository via GitHub API for iPad offline access
 
 class PortfolioRepositoryService {
   constructor() {
-    // Path to the portfolio repository (where the iPad app gets its files)
-    this.portfolioRepoPath = '/Users/evanwalker/Desktop/ipad-portfolio';
-    this.videosPath = `${this.portfolioRepoPath}/public/videos`;
-    this.projectsPath = `${this.portfolioRepoPath}/public/projects`;
-    this.dataPath = `${this.portfolioRepoPath}/public/data`;
+    // GitHub repository configuration from environment variables
+    this.githubOwner = 'evanreecewalker1';
+    this.githubRepo = 'oursayso-sales-ipad';
+    this.githubBranch = process.env.REACT_APP_GITHUB_BRANCH || 'main';
+    this.githubApiUrl = 'https://api.github.com';
+    
+    // GitHub API file size limit (100MB)
+    this.maxFileSize = 100 * 1024 * 1024;
+    
+    // Portfolio repository structure
+    this.videosPath = 'public/videos';
+    this.projectsPath = 'public/projects';
+    this.dataPath = 'public/data';
+    
+    // GitHub authentication
+    this.githubToken = process.env.REACT_APP_GITHUB_TOKEN;
+    
+    console.log('📋 GitHub Repository Service initialized:', {
+      owner: this.githubOwner,
+      repo: this.githubRepo,
+      branch: this.githubBranch,
+      hasToken: !!this.githubToken,
+      maxFileSize: this.formatFileSize(this.maxFileSize)
+    });
   }
 
-  // Write video file directly to portfolio repository
+  // Write video file to GitHub repository via API
   async writeVideoToRepository(file, projectId, fileName) {
     try {
-      console.log('📁 Writing video to portfolio repository:', fileName);
+      console.log('📁 Uploading video to GitHub repository:', fileName);
+      
+      // Check authentication
+      if (!this.githubToken) {
+        throw new Error('GitHub token not configured. Please set REACT_APP_GITHUB_TOKEN environment variable.');
+      }
+      
+      // Check file size
+      if (file.size > this.maxFileSize) {
+        console.warn(`⚠️ File size ${this.formatFileSize(file.size)} exceeds GitHub API limit of ${this.formatFileSize(this.maxFileSize)}`);
+        throw new Error(`File too large for GitHub API. Maximum size: ${this.formatFileSize(this.maxFileSize)}`);
+      }
       
       // Create the target path for the video
       const videoFileName = `${projectId}-${Date.now()}-${this.sanitizeFileName(fileName)}`;
-      const targetPath = `${this.videosPath}/${videoFileName}`;
-      
-      // Convert file to buffer for writing
-      const buffer = await this.fileToBuffer(file);
-      
-      // This would write the file to the actual filesystem
-      // For now, we'll simulate this and return the path that would be created
+      const githubPath = `${this.videosPath}/${videoFileName}`;
       const relativePath = `/videos/${videoFileName}`;
       
-      console.log('✅ Video would be written to portfolio repository:', targetPath);
-      console.log('📝 Portfolio app would access it via:', relativePath);
+      // Convert file to base64 (required by GitHub API)
+      console.log('🔄 Converting video to base64 for GitHub API...');
+      const base64Content = await this.fileToBase64(file);
+      
+      // Upload to GitHub via API
+      const uploadResult = await this.uploadFileToGitHub(
+        githubPath,
+        base64Content,
+        `Add video: ${fileName} for project ${projectId}`
+      );
+      
+      console.log('✅ Video uploaded to GitHub repository:', githubPath);
+      console.log('📝 Portfolio app will access it via:', relativePath);
+      console.log('🔗 GitHub commit:', uploadResult.commit.html_url);
       
       return {
         success: true,
         localPath: relativePath,
-        absolutePath: targetPath,
+        githubPath: githubPath,
         fileName: videoFileName,
         size: file.size,
-        type: file.type
+        type: file.type,
+        commitSha: uploadResult.commit.sha,
+        commitUrl: uploadResult.commit.html_url
       };
     } catch (error) {
-      console.error('❌ Failed to write video to portfolio repository:', error);
+      console.error('❌ Failed to upload video to GitHub repository:', error);
       throw error;
     }
   }
@@ -100,52 +138,125 @@ class PortfolioRepositoryService {
     }
   }
 
-  // Commit and push changes to portfolio repository
-  async commitAndPushToPortfolio(commitMessage, filePaths = []) {
+  // Trigger portfolio deployment after GitHub upload
+  async triggerPortfolioDeployment(commitSha, commitMessage) {
     try {
-      console.log('📤 Committing and pushing to portfolio repository...');
+      console.log('🚀 Portfolio deployment will be triggered by GitHub commit:', commitSha);
       console.log('💬 Commit message:', commitMessage);
-      console.log('📁 Files to commit:', filePaths);
       
-      // Git operations for portfolio repository
-      const gitCommands = [
-        `cd ${this.portfolioRepoPath}`,
-        'git add .',
-        `git commit -m "${commitMessage}"`,
-        'git push origin main'
-      ];
+      // GitHub Actions or other CI/CD will automatically deploy the portfolio
+      // when new commits are pushed to the main branch
       
-      console.log('🔧 Git commands that would be executed:');
-      gitCommands.forEach(cmd => console.log(`  ${cmd}`));
+      // Optionally, we could trigger a deployment webhook or GitHub Action here
+      // For now, just log that the deployment will happen automatically
       
-      // For now, simulate successful git operations
-      console.log('✅ Portfolio repository would be updated with new video files');
-      console.log('🚀 Portfolio app deployment would be triggered');
+      console.log('✅ Video uploaded to GitHub repository successfully');
+      console.log('📱 Portfolio app will be updated with new video for offline access');
       
       return {
         success: true,
-        commitMessage: commitMessage,
-        filePaths: filePaths,
-        gitCommands: gitCommands
+        commitSha: commitSha,
+        deploymentTriggered: true,
+        message: 'Portfolio deployment will be triggered automatically by GitHub'
       };
     } catch (error) {
-      console.error('❌ Failed to commit/push to portfolio repository:', error);
+      console.error('❌ Failed to trigger portfolio deployment:', error);
       throw error;
     }
   }
 
-  // Convert File object to buffer for writing
-  async fileToBuffer(file) {
+  // Core GitHub API method to upload a file
+  async uploadFileToGitHub(filePath, base64Content, commitMessage) {
+    try {
+      const url = `${this.githubApiUrl}/repos/${this.githubOwner}/${this.githubRepo}/contents/${filePath}`;
+      
+      // Check if file exists (for updates)
+      let existingSha = null;
+      try {
+        const existingFile = await this.getFileFromGitHub(filePath);
+        existingSha = existingFile.sha;
+        console.log('📝 File exists, will update:', filePath);
+      } catch (error) {
+        console.log('📝 New file, will create:', filePath);
+      }
+      
+      const requestBody = {
+        message: commitMessage,
+        content: base64Content,
+        branch: this.githubBranch
+      };
+      
+      // Add sha for updates
+      if (existingSha) {
+        requestBody.sha = existingSha;
+      }
+      
+      console.log('🚀 Making GitHub API request...');
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${this.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`GitHub API error: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ GitHub API upload successful');
+      
+      return result;
+    } catch (error) {
+      console.error('❌ GitHub API upload failed:', error);
+      throw error;
+    }
+  }
+  
+  // Get file from GitHub (to check if it exists and get SHA)
+  async getFileFromGitHub(filePath) {
+    const url = `${this.githubApiUrl}/repos/${this.githubOwner}/${this.githubRepo}/contents/${filePath}`;
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${this.githubToken}`,
+        'Accept': 'application/vnd.github.v3+json',
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    
+    return await response.json();
+  }
+  
+  // Convert File object to base64 (required by GitHub API)
+  async fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        const arrayBuffer = reader.result;
-        const buffer = new Uint8Array(arrayBuffer);
-        resolve(buffer);
+        // Remove the data URL prefix to get pure base64
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
       };
       reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
+      reader.readAsDataURL(file);
     });
+  }
+
+  // Format file size for display
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   // Sanitize file names for safe filesystem usage
@@ -164,24 +275,40 @@ class PortfolioRepositoryService {
     return `project-${projectId}`;
   }
 
-  // Check if portfolio repository exists and is accessible
-  async validatePortfolioRepository() {
+  // Validate GitHub API access and repository
+  async validateGitHubAccess() {
     try {
-      console.log('🔍 Validating portfolio repository path:', this.portfolioRepoPath);
+      console.log('🔍 Validating GitHub API access...');
       
-      // This would check if the directory exists and is a git repository
-      // For now, assume it's valid
-      console.log('✅ Portfolio repository is accessible');
+      if (!this.githubToken) {
+        throw new Error('GitHub token not configured. Please set REACT_APP_GITHUB_TOKEN environment variable.');
+      }
+      
+      // Test GitHub API access by getting repository info
+      const url = `${this.githubApiUrl}/repos/${this.githubOwner}/${this.githubRepo}`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.githubToken}`,
+          'Accept': 'application/vnd.github.v3+json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`GitHub API access failed: ${response.status} - ${response.statusText}`);
+      }
+      
+      const repoInfo = await response.json();
+      console.log('✅ GitHub repository access validated:', repoInfo.full_name);
       
       return {
         valid: true,
-        path: this.portfolioRepoPath,
-        videosPath: this.videosPath,
-        projectsPath: this.projectsPath,
-        dataPath: this.dataPath
+        repository: repoInfo.full_name,
+        branch: this.githubBranch,
+        hasWriteAccess: repoInfo.permissions?.push || false
       };
     } catch (error) {
-      console.error('❌ Portfolio repository validation failed:', error);
+      console.error('❌ GitHub validation failed:', error);
       return {
         valid: false,
         error: error.message

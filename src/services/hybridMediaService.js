@@ -108,10 +108,10 @@ class HybridMediaService {
         // Also store in local manager for immediate CMS preview
         await LocalFileManager.saveFile(file, repositoryResult.localPath);
         
-        // Commit and push to portfolio repository
-        await PortfolioRepositoryService.commitAndPushToPortfolio(
-          `Add video: ${file.name} for project ${projectId}`,
-          [repositoryResult.absolutePath]
+        // Trigger portfolio deployment
+        await PortfolioRepositoryService.triggerPortfolioDeployment(
+          repositoryResult.commitSha,
+          `Add video: ${file.name} for project ${projectId}`
         );
         
       } else {
