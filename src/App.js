@@ -12,7 +12,7 @@ import GalleryBuilder from './components/GalleryBuilder';
 // Main CMS Component (authenticated)
 const CMSApp = () => {
   const buildTimestamp = new Date().toISOString();
-  console.log('🚀 ===== HYBRID MEDIA SYSTEM DEPLOYED ===== 🚀');
+  console.log('🚀 ===== HYBRID MEDIA SYSTEM FORCE DEPLOY ===== 🚀');
   console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
   console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
   console.log('🆔 VERSION: 2025-08-14-PDF-PREVIEW-PUBLISH-FIX-DEPLOY');
