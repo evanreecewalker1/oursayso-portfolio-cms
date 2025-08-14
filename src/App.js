@@ -1741,11 +1741,8 @@ const CMSApp = () => {
       mediaItems: (project.mediaItems || []).map(item => {
         // Handle gallery items specially - they may have both files and images arrays
         if (item.type === 'gallery') {
-          // Combine files from both 'files' and 'images' arrays for galleries
-          const allFiles = [
-            ...(item.files || []),
-            ...(item.images || [])
-          ].filter(file => file && file.name);
+          // Use images array primarily for galleries to avoid duplication
+          const allFiles = (item.images || item.files || []).filter(file => file && file.name);
           
           console.log(`🖼️ GALLERY CONVERSION: Processing ${allFiles.length} gallery files:`, {
             galleryId: item.id,
