@@ -56,6 +56,18 @@ class HybridMediaService {
 
   // Upload media using appropriate storage method
   async uploadMedia(file, options = {}) {
+    // CRITICAL: Gallery images MUST always go to Cloudinary for portfolio display
+    if (options.type === 'gallery-image') {
+      console.log(`🖼️ GALLERY IMAGE DETECTED - forcing Cloudinary upload:`, {
+        fileName: file.name,
+        size: this.formatFileSize(file.size),
+        storageMethod: 'cloudinary (forced for gallery)',
+        reason: 'Gallery images must be on Cloudinary for portfolio display'
+      });
+      
+      return await this.uploadToCloudinary(file, options);
+    }
+    
     const storageDecision = this.getStorageMethod(file);
     
     console.log(`📁 Hybrid Upload Decision:`, {
