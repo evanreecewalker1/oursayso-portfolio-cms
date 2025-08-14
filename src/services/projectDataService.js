@@ -37,7 +37,10 @@ class ProjectDataService {
       // Save to projects.json in the repository
       const fileName = 'cms-projects.json';
       const filePath = `${this.dataPath}/${fileName}`;
-      const base64Content = btoa(JSON.stringify(dataToSave, null, 2));
+      
+      // Use proper UTF-8 encoding instead of btoa() to handle Unicode characters
+      const jsonString = JSON.stringify(dataToSave, null, 2);
+      const base64Content = this.utf8ToBase64(jsonString);
 
       const result = await this.uploadFileToGitHub(
         filePath,
@@ -92,8 +95,8 @@ class ProjectDataService {
         return this.loadFromLocalStorage();
       }
 
-      // Decode base64 content
-      const jsonContent = atob(fileData.content);
+      // Decode base64 content with proper UTF-8 handling
+      const jsonContent = this.base64ToUtf8(fileData.content);
       const data = JSON.parse(jsonContent);
 
       console.log('✅ Project data loaded from GitHub:', {
@@ -267,6 +270,32 @@ class ProjectDataService {
         valid: false,
         error: error.message
       };
+    }
+  }
+
+  // Utility function to convert UTF-8 string to base64 (handles Unicode characters)
+  utf8ToBase64(str) {
+    try {
+      // First convert string to UTF-8 bytes, then to base64
+      // This handles Unicode characters that btoa() can't handle
+      return btoa(unescape(encodeURIComponent(str)));
+    } catch (error) {
+      console.error('❌ UTF-8 to Base64 encoding failed:', error);
+      // Fallback: try to sanitize the string first
+      const sanitized = str.replace(/[^\x00-\x7F]/g, ""); // Remove non-ASCII chars
+      console.log('⚠️ Using sanitized ASCII-only version for GitHub save');
+      return btoa(sanitized);
+    }
+  }
+
+  // Utility function to convert base64 back to UTF-8 string
+  base64ToUtf8(base64Str) {
+    try {
+      return decodeURIComponent(escape(atob(base64Str)));
+    } catch (error) {
+      console.error('❌ Base64 to UTF-8 decoding failed:', error);
+      // Fallback to regular atob
+      return atob(base64Str);
     }
   }
 }
