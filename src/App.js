@@ -7,6 +7,7 @@ import MediaUploader from './components/MediaUploader';
 import BandwidthMonitor from './components/BandwidthMonitor';
 import CloudinaryService from './services/cloudinaryConfig';
 import HybridMediaService from './services/hybridMediaService';
+import ProjectDataService from './services/projectDataService';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
@@ -83,22 +84,33 @@ const CMSApp = () => {
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [dragOverPage, setDragOverPage] = useState(null); // Track which page we're dragging over
 
-  // Real portfolio data from oursayso-sales-ipad repository
-  const [projects, setProjects] = useState(() => {
-    const savedProjects = localStorage.getItem('portfolio-cms-projects');
-    console.log('🔍 Loading projects from localStorage:', savedProjects ? 'Found saved data' : 'No saved data');
-    if (savedProjects) {
+  // Real portfolio data from GitHub repository
+  const [projects, setProjects] = useState([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
+  
+  // Load projects from GitHub on startup
+  useEffect(() => {
+    const loadProjectData = async () => {
       try {
-        const parsed = JSON.parse(savedProjects);
-        console.log('✅ Loaded', parsed.length, 'projects from localStorage');
-        console.log('✅ First project title:', parsed[0]?.title);
-        return parsed;
-      } catch (e) {
-        console.warn('Failed to parse saved projects, using defaults');
-      }
-    }
-    console.log('📝 Using hardcoded default projects');
-    return [
+        console.log('🔍 Loading project data from GitHub repository...');
+        setIsLoadingProjects(true);
+        
+        const data = await ProjectDataService.loadProjectsFromGitHub();
+        
+        setProjects(data.projects);
+        setPage2Projects(data.page2Projects);
+        setTestimonials(data.testimonials);
+        
+        console.log('✅ Project data loaded successfully:', {
+          projects: data.projects.length,
+          page2Projects: data.page2Projects.length,
+          testimonials: data.testimonials.length
+        });
+      } catch (error) {
+        console.error('❌ Failed to load project data:', error);
+        // Fallback to default projects
+        console.log('📝 Using fallback default projects');
+        setProjects([
     {
       id: '1',
       title: 'Lovell Leadership Conferences',
@@ -457,66 +469,22 @@ const CMSApp = () => {
         updatedAt: '2024-03-20T10:00:00Z',
         version: 1,
         status: 'draft'
+        }
       }
-    }
-  ];
-  });
+      ]);
+      } finally {
+        setIsLoadingProjects(false);
+      }
+    };
+    
+    loadProjectData();
+  }, []); // Load once on component mount
 
-  // Page 2 projects - additional portfolio projects
-  const [page2Projects, setPage2Projects] = useState(() => {
-    const savedPage2Projects = localStorage.getItem('portfolio-cms-page2-projects');
-    if (savedPage2Projects) {
-      try {
-        return JSON.parse(savedPage2Projects);
-      } catch (e) {
-        console.warn('Failed to parse saved page 2 projects, using defaults');
-      }
-    }
-    return [];
-  });
+  // Page 2 projects - managed via GitHub
+  const [page2Projects, setPage2Projects] = useState([]);
 
-  // Real client testimonials from portfolio
-  // eslint-disable-next-line no-unused-vars
-  const [testimonials, setTestimonials] = useState(() => {
-    const savedTestimonials = localStorage.getItem('portfolio-cms-testimonials');
-    if (savedTestimonials) {
-      try {
-        return JSON.parse(savedTestimonials);
-      } catch (e) {
-        console.warn('Failed to parse saved testimonials, using defaults');
-      }
-    }
-    return [
-    {
-      id: '1',
-      text: 'Their work is memorable, relevant, entertaining, thought provoking, and above all highly effective.',
-      author: 'Faye Frater, InterContinental Hotels Group',
-      project: 'Hotel Training Materials',
-      date: '2024-01-15'
-    },
-    {
-      id: '2',
-      text: 'Oursayso are great to work with both from the quality of their work and the enthusiasm and commitment that they put into it.',
-      author: 'Alan Long, Executive Director, Mears Group',
-      project: 'Corporate Communications',
-      date: '2024-02-20'
-    },
-    {
-      id: '3',
-      text: 'Oursayso work hard with the leadership of the business to deliver appropriate, simple and direct messages that will see an immediate response.',
-      author: 'Paul Mildenstein, CEO, Atkore',
-      project: 'Leadership Training Program',
-      date: '2024-03-10'
-    },
-    {
-      id: '4',
-      text: 'The conference transformation exceeded all expectations. Our executives are already asking about next year.',
-      author: 'Sarah Mitchell, Chief Learning Officer, Lovell Corporation',
-      project: 'Lovell Leadership Conferences',
-      date: '2024-01-30'
-    }
-  ];
-  });
+  // Real client testimonials - managed via GitHub
+  const [testimonials, setTestimonials] = useState([]);
 
   // Project Editor State
   const [projectForm, setProjectForm] = useState({
@@ -599,22 +567,28 @@ const CMSApp = () => {
   const tileVideoRef = useRef(null);
   const pageBackgroundRef = useRef(null);
   
-  // Save projects to localStorage whenever they change
+  // Auto-save projects to GitHub whenever they change (with debounce)
   useEffect(() => {
-    localStorage.setItem('portfolio-cms-projects', JSON.stringify(projects));
-    console.log('💾 Projects saved to localStorage:', projects.length, 'projects');
-    console.log('💾 First project title:', projects[0]?.title);
-  }, [projects]);
-  
-  useEffect(() => {
-    localStorage.setItem('portfolio-cms-page2-projects', JSON.stringify(page2Projects));
-    console.log('💾 Page 2 projects saved to localStorage');
-  }, [page2Projects]);
+    if (isLoadingProjects) return; // Don't save while initially loading
+    
+    const saveTimer = setTimeout(async () => {
+      try {
+        console.log('💾 Auto-saving project data to GitHub...', {
+          projects: projects.length,
+          page2Projects: page2Projects.length,
+          testimonials: testimonials.length
+        });
+        
+        await ProjectDataService.saveProjectsToGitHub(projects, page2Projects, testimonials);
+        console.log('✅ Project data auto-saved to GitHub successfully');
+      } catch (error) {
+        console.error('❌ Failed to auto-save to GitHub:', error);
+        // localStorage fallback already handled in the service
+      }
+    }, 2000); // Debounce: save 2 seconds after last change
 
-  useEffect(() => {
-    localStorage.setItem('portfolio-cms-testimonials', JSON.stringify(testimonials));
-    console.log('💾 Testimonials saved to localStorage');
-  }, [testimonials]);
+    return () => clearTimeout(saveTimer);
+  }, [projects, page2Projects, testimonials, isLoadingProjects]);
 
   // Cleanup blob URLs when component unmounts or files change
   useEffect(() => {
