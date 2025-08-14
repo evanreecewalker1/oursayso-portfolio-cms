@@ -8,6 +8,7 @@ import BandwidthMonitor from './components/BandwidthMonitor';
 import CloudinaryService from './services/cloudinaryConfig';
 import HybridMediaService from './services/hybridMediaService';
 import ProjectDataService from './services/projectDataService';
+import GalleryBuilder from './components/GalleryBuilder';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
@@ -494,6 +495,9 @@ const CMSApp = () => {
 
   // Real client testimonials - managed via GitHub
   const [testimonials, setTestimonials] = useState([]);
+  
+  // Gallery management state
+  const [galleryUploading, setGalleryUploading] = useState(false);
 
   // Project Editor State
   const [projectForm, setProjectForm] = useState({
@@ -1306,6 +1310,65 @@ const CMSApp = () => {
     } catch (error) {
       console.error('❌ Media upload failed:', error);
       throw error;
+    }
+  };
+
+  // Handle gallery images upload via GalleryBuilder
+  const handleGalleryUpload = async (images, galleryId) => {
+    try {
+      console.log(`📸 Uploading ${images.length} images to gallery ${galleryId}...`);
+      setGalleryUploading(true);
+      
+      const uploadedFiles = [];
+      
+      for (const image of images) {
+        try {
+          // Upload via hybrid service
+          const result = await HybridMediaService.uploadMedia(image, { 
+            projectId: projectForm.id || 'temp',
+            type: 'gallery-image'
+          });
+          
+          // Add gallery-specific metadata
+          const galleryFile = {
+            ...result,
+            id: `gallery-img-${Date.now()}-${Math.random()}`,
+            name: image.name,
+            size: image.size,
+            uploadedAt: new Date().toISOString(),
+            storageType: result.storageType || 'cloudinary'
+          };
+          
+          uploadedFiles.push(galleryFile);
+          console.log('✅ Gallery image uploaded:', galleryFile.name);
+        } catch (error) {
+          console.error('❌ Failed to upload gallery image:', image.name, error);
+          // Continue with other images
+        }
+      }
+      
+      // Update the gallery with new images
+      if (uploadedFiles.length > 0) {
+        setProjectForm(prev => ({
+          ...prev,
+          mediaItems: prev.mediaItems.map(item => 
+            item.id === galleryId ? {
+              ...item,
+              images: [...(item.images || []), ...uploadedFiles],
+              title: `🖼️ Project Gallery (${(item.images?.length || 0) + uploadedFiles.length} images)`
+            } : item
+          )
+        }));
+        
+        console.log(`✅ Added ${uploadedFiles.length} images to gallery`);
+      }
+      
+      return uploadedFiles;
+    } catch (error) {
+      console.error('❌ Gallery upload failed:', error);
+      throw error;
+    } finally {
+      setGalleryUploading(false);
     }
   };
 
@@ -2946,36 +3009,72 @@ const CMSApp = () => {
             </div>
             
             <div className="media-items">
-              {projectForm.mediaItems.map((item) => (
-                <div key={item.id} className="media-item">
-                  <div className="media-item-header">
-                    <GripVertical size={16} className="drag-handle" />
-                    <select
-                      value={item.type}
-                      onChange={(e) => updateMediaItem(item.id, { type: e.target.value })}
-                      className="media-type-select"
-                    >
-                      <option value="gallery">Gallery</option>
-                      <option value="video">Video</option>
-                      <option value="pdf">PDF</option>
-                      <option value="case-study">Case Study</option>
-                    </select>
-                    <input
-                      type="text"
-                      placeholder="Media item title"
-                      value={item.title}
-                      onChange={(e) => updateMediaItem(item.id, { title: e.target.value })}
-                      className="media-title-input"
-                    />
-                    <button
-                      onClick={() => removeMediaItem(item.id)}
-                      className="btn-icon btn-danger"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  
-                  <div className="media-upload-area">
+              {projectForm.mediaItems.map((item) => {
+                // Render GalleryBuilder for gallery items
+                if (item.type === 'gallery') {
+                  return (
+                    <div key={item.id} className="media-item gallery-item">
+                      <GalleryBuilder 
+                        gallery={{
+                          ...item,
+                          images: item.images || item.files || [] // Support both new images array and legacy files array
+                        }}
+                        onGalleryUpdate={(updatedGallery) => {
+                          updateMediaItem(item.id, {
+                            ...updatedGallery,
+                            images: updatedGallery.images || [],
+                            files: updatedGallery.images || [] // Keep legacy files array in sync
+                          });
+                        }}
+                        onUploadImages={(images) => handleGalleryUpload(images, item.id)}
+                        isUploading={galleryUploading}
+                      />
+                      
+                      {/* Keep the remove button for the entire gallery */}
+                      <div className="gallery-actions">
+                        <button
+                          onClick={() => removeMediaItem(item.id)}
+                          className="btn-icon btn-danger remove-gallery-btn"
+                          title="Remove entire gallery"
+                        >
+                          <Trash2 size={16} /> Remove Gallery
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+                
+                // Render traditional media item UI for non-gallery items  
+                return (
+                  <div key={item.id} className="media-item">
+                    <div className="media-item-header">
+                      <GripVertical size={16} className="drag-handle" />
+                      <select
+                        value={item.type}
+                        onChange={(e) => updateMediaItem(item.id, { type: e.target.value })}
+                        className="media-type-select"
+                      >
+                        <option value="gallery">Gallery</option>
+                        <option value="video">Video</option>
+                        <option value="pdf">PDF</option>
+                        <option value="case-study">Case Study</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Media item title"
+                        value={item.title}
+                        onChange={(e) => updateMediaItem(item.id, { title: e.target.value })}
+                        className="media-title-input"
+                      />
+                      <button
+                        onClick={() => removeMediaItem(item.id)}
+                        className="btn-icon btn-danger"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                    
+                    <div className="media-upload-area">
                     {/* Show uploaded files if any exist */}
                     {item.files && item.files.length > 0 ? (
                       <div className="uploaded-files">
@@ -3125,7 +3224,8 @@ const CMSApp = () => {
                     )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
               
               {projectForm.mediaItems.length === 0 && (
                 <div className="empty-state">
