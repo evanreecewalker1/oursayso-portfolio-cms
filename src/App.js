@@ -1243,14 +1243,23 @@ const CMSApp = () => {
     
     // CRITICAL: Also update the main projects state for auto-save and publish
     if (projectForm.id) {
-      setProjects(prev => prev.map(project => 
-        project.id === projectForm.id ? {
-          ...project,
-          mediaItems: project.mediaItems.filter(item => item.id !== id)
-        } : project
-      ));
+      if (editingProjectPage === 1) {
+        setProjects(prev => prev.map(project => 
+          project.id === projectForm.id ? {
+            ...project,
+            mediaItems: project.mediaItems.filter(item => item.id !== id)
+          } : project
+        ));
+      } else {
+        setPage2Projects(prev => prev.map(project => 
+          project.id === projectForm.id ? {
+            ...project,
+            mediaItems: project.mediaItems.filter(item => item.id !== id)
+          } : project
+        ));
+      }
       
-      console.log('✅ Removed media item from main projects state for auto-save');
+      console.log(`✅ Removed media item from page ${editingProjectPage} projects state for auto-save`);
     }
   };
 
@@ -1381,21 +1390,37 @@ const CMSApp = () => {
         
         // CRITICAL: Also update the main projects state for auto-save
         if (projectForm.id) {
-          setProjects(prev => prev.map(project => 
-            project.id === projectForm.id ? {
-              ...project,
-              mediaItems: project.mediaItems.map(item => 
-                item.id === galleryId ? {
-                  ...item,
-                  images: [...(item.images || []), ...uploadedFiles],
-                  files: [...(item.images || []), ...uploadedFiles], // Keep both arrays in sync
-                  title: `🖼️ Project Gallery (${(item.images?.length || 0) + uploadedFiles.length} images)`
-                } : item
-              )
-            } : project
-          ));
+          if (editingProjectPage === 1) {
+            setProjects(prev => prev.map(project => 
+              project.id === projectForm.id ? {
+                ...project,
+                mediaItems: project.mediaItems.map(item => 
+                  item.id === galleryId ? {
+                    ...item,
+                    images: [...(item.images || []), ...uploadedFiles],
+                    files: [...(item.images || []), ...uploadedFiles], // Keep both arrays in sync
+                    title: `🖼️ Project Gallery (${(item.images?.length || 0) + uploadedFiles.length} images)`
+                  } : item
+                )
+              } : project
+            ));
+          } else {
+            setPage2Projects(prev => prev.map(project => 
+              project.id === projectForm.id ? {
+                ...project,
+                mediaItems: project.mediaItems.map(item => 
+                  item.id === galleryId ? {
+                    ...item,
+                    images: [...(item.images || []), ...uploadedFiles],
+                    files: [...(item.images || []), ...uploadedFiles], // Keep both arrays in sync
+                    title: `🖼️ Project Gallery (${(item.images?.length || 0) + uploadedFiles.length} images)`
+                  } : item
+                )
+              } : project
+            ));
+          }
           
-          console.log('✅ Updated main projects state for auto-save');
+          console.log(`✅ Updated page ${editingProjectPage} projects state for auto-save`);
         }
         
         console.log(`✅ Added ${uploadedFiles.length} images to gallery`);
