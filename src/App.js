@@ -15,7 +15,7 @@ const CMSApp = () => {
   console.log('🚀 ===== HYBRID MEDIA SYSTEM DEPLOYED ===== 🚀');
   console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
   console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
-  console.log('🆔 VERSION: 2025-08-14-UX-GALLERY-VIDEO-PREVIEW-DEPLOY');
+  console.log('🆔 VERSION: 2025-08-14-CRITICAL-ENCODING-FIX-DEPLOY');
   console.log('⏰ LOADED AT:', new Date().toLocaleString());
   console.log('🚀 ========================================== 🚀');
   const { user, logout } = useAuth();
@@ -2940,6 +2940,34 @@ const CMSApp = () => {
                 if (item.type === 'gallery') {
                   return (
                     <div key={item.id} className="media-item gallery-item">
+                      {/* Add type selection header for gallery items too */}
+                      <div className="media-item-header">
+                        <GripVertical size={16} className="drag-handle" />
+                        <select
+                          value={item.type}
+                          onChange={(e) => updateMediaItem(item.id, { type: e.target.value })}
+                          className="media-type-select"
+                        >
+                          <option value="gallery">Gallery</option>
+                          <option value="video">Video</option>
+                          <option value="pdf">PDF</option>
+                          <option value="case-study">Case Study</option>
+                        </select>
+                        <input
+                          type="text"
+                          placeholder="Gallery title"
+                          value={item.title}
+                          onChange={(e) => updateMediaItem(item.id, { title: e.target.value })}
+                          className="media-title-input"
+                        />
+                        <button
+                          onClick={() => removeMediaItem(item.id)}
+                          className="btn-icon btn-danger"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                      
                       <GalleryBuilder 
                         gallery={{
                           ...item,
@@ -2955,17 +2983,6 @@ const CMSApp = () => {
                         onUploadImages={(images) => handleGalleryUpload(images, item.id)}
                         isUploading={galleryUploading}
                       />
-                      
-                      {/* Keep the remove button for the entire gallery */}
-                      <div className="gallery-actions">
-                        <button
-                          onClick={() => removeMediaItem(item.id)}
-                          className="btn-icon btn-danger remove-gallery-btn"
-                          title="Remove entire gallery"
-                        >
-                          <Trash2 size={16} /> Remove Gallery
-                        </button>
-                      </div>
                     </div>
                   );
                 }
