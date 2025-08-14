@@ -12,11 +12,12 @@ import GalleryBuilder from './components/GalleryBuilder';
 // Main CMS Component (authenticated)
 const CMSApp = () => {
   const buildTimestamp = new Date().toISOString();
-  console.log('🚀 ===== HYBRID MEDIA SYSTEM FORCE DEPLOY ===== 🚀');
-  console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
+  console.log('🚀 ===== NETLIFY FORCE REBUILD ===== 🚀');
+  console.log('🔍 DEBUG: Forcing new deployment - PDF & Publish fixes included!');
   console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
-  console.log('🆔 VERSION: 2025-08-14-PDF-PREVIEW-PUBLISH-FIX-DEPLOY');
+  console.log('🆔 VERSION: 2025-08-14-NETLIFY-FORCE-REBUILD');
   console.log('⏰ LOADED AT:', new Date().toLocaleString());
+  console.log('🔧 FIXES: PDF previews + publish error resolved');
   console.log('🚀 ========================================== 🚀');
   const { user, logout } = useAuth();
   
