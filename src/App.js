@@ -3078,7 +3078,7 @@ const CMSApp = () => {
                                     <span className="success-indicator">✅ {file.storageType === 'portfolio' ? 'iPad Ready' : 'Uploaded'}</span>
                                   </div>
                                 </div>
-                              ) : (file.resourceType === 'raw' && file.name?.toLowerCase().endsWith('.pdf')) || item.type === 'pdf' ? (
+                              ) : (file.resourceType === 'raw' && file.name?.toLowerCase().endsWith('.pdf')) || (item.type === 'pdf' && file.url) ? (
                                 <div className="pdf-preview">
                                   <iframe
                                     src={`${file.url || file.preview}#view=FitH`}
