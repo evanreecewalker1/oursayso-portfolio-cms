@@ -1812,7 +1812,20 @@ const CMSApp = () => {
                 return file.url;
               }
               
-              // For videos stored in repository, use the repository path
+              // For videos stored in portfolio repository, use the repository path
+              if (item.type === 'video' && file.storageType === 'portfolio') {
+                const videoPath = file.url && file.url.startsWith('/videos/') ? file.url : `/videos/${file.name}`;
+                console.log(`🎬 PRESERVING portfolio video path:`, {
+                  fileName: file.name,
+                  repositoryPath: videoPath,
+                  itemType: item.type,
+                  storageType: file.storageType,
+                  originalUrl: file.url
+                });
+                return videoPath;
+              }
+              
+              // For videos with repository URL paths
               if (item.type === 'video' && file.url && file.url.startsWith('/videos/')) {
                 console.log(`🎬 PRESERVING repository video path:`, {
                   fileName: file.name,
@@ -1834,7 +1847,8 @@ const CMSApp = () => {
               return localPath;
             })(),
             name: file.name,
-            type: file.type
+            type: file.type || (item.type === 'video' ? 'video/mp4' : 'application/octet-stream'),
+            storageType: file.storageType
           })),
           order: item.order || 0
         };
