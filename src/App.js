@@ -3819,6 +3819,13 @@ const CMSApp = () => {
             <Upload size={18} />
             {publishProgress.isPublishing ? 'Publishing...' : 'Publish'}
           </button>
+          <button 
+            className="btn btn-logout"
+            onClick={logout}
+            title="Logout"
+          >
+            ↪️ Logout
+          </button>
         </div>
       </div>
 
