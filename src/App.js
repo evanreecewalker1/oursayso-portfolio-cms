@@ -3,7 +3,6 @@ import { Plus, Edit, Trash2, Menu, Settings, Eye, Upload, ChevronUp, ChevronDown
 import './App.css';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginForm from './components/LoginForm';
-import MediaUploader from './components/MediaUploader';
 import BandwidthMonitor from './components/BandwidthMonitor';
 import CloudinaryService from './services/cloudinaryConfig';
 import HybridMediaService from './services/hybridMediaService';
@@ -850,7 +849,12 @@ const CMSApp = () => {
         }
         return pageBackground || null;
       })(),
-      mediaItems: project.mediaItems || []
+      mediaItems: (project.mediaItems || []).map(item => ({
+        ...item,
+        // Ensure both images and files arrays exist for backward compatibility
+        images: item.images || item.files || [],
+        files: item.files || item.images || []
+      }))
     };
 
     console.log('📝 Loading project with media items:', {
@@ -1453,6 +1457,7 @@ const CMSApp = () => {
           type: item.type,
           title: item.title,
           files: item.files || [],
+          images: item.images || [], // Add images array for gallery items
           order: projectForm.mediaItems.indexOf(item)
         })),
         
@@ -2928,85 +2933,6 @@ const CMSApp = () => {
               </button>
             </div>
 
-            {/* Cloudinary Media Upload */}
-            <div className="cloudinary-upload-section">
-              <h3>Upload Media to Cloudinary</h3>
-              <MediaUploader 
-                onUploadComplete={(result, item) => {
-                  // Create file object for auto-grouping logic
-                  const uploadedFile = {
-                    name: item.name,
-                    type: item.file.type,
-                    size: result.bytes,
-                    url: result.url,
-                    cloudinaryId: result.publicId,
-                    uploadedAt: new Date().toISOString(),
-                    storageType: 'cloudinary'
-                  };
-                  
-                  // Check for gallery auto-grouping
-                  const fileName = item.name.toLowerCase();
-                  const isImageFile = /\.(jpg|jpeg|png|gif|webp)$/i.test(fileName);
-                  const galleryPattern = /^gallery[\s_-]*\d*/i;
-                  const isGalleryImage = isImageFile && galleryPattern.test(fileName);
-                  
-                  if (isGalleryImage) {
-                    // Find existing gallery or create new one
-                    setProjectForm(prev => {
-                      let existingGallery = prev.mediaItems.find(item => 
-                        item.type === 'gallery' && 
-                        (item.title.toLowerCase().includes('gallery') || 
-                         item.title === '' || 
-                         item.title.toLowerCase() === 'untitled media')
-                      );
-                      
-                      if (existingGallery) {
-                        // Add to existing gallery
-                        return {
-                          ...prev,
-                          mediaItems: prev.mediaItems.map(mediaItem => 
-                            mediaItem.id === existingGallery.id ? {
-                              ...mediaItem,
-                              title: `🖼️ Project Gallery (${(mediaItem.files?.length || 0) + 1} images)`,
-                              files: [...(mediaItem.files || []), uploadedFile]
-                            } : mediaItem
-                          )
-                        };
-                      } else {
-                        // Create new gallery
-                        const newGallery = {
-                          id: `gallery-${Date.now()}`,
-                          type: 'gallery',
-                          title: '🖼️ Project Gallery (1 image)',
-                          files: [uploadedFile]
-                        };
-                        return {
-                          ...prev,
-                          mediaItems: [...prev.mediaItems, newGallery]
-                        };
-                      }
-                    });
-                  } else {
-                    // Create individual media item for non-gallery content
-                    const newMediaItem = {
-                      id: Date.now().toString(),
-                      type: item.file.type.startsWith('video/') ? 'video' : 'image',
-                      title: item.name.replace(/\.[^/.]+$/, ''), // Remove file extension
-                      files: [uploadedFile]
-                    };
-                    
-                    setProjectForm(prev => ({
-                      ...prev,
-                      mediaItems: [...prev.mediaItems, newMediaItem]
-                    }));
-                    
-                    console.log('✅ Media uploaded and added to project:', newMediaItem);
-                  }
-                }}
-                maxFiles={5}
-                acceptedTypes="image/*,video/*"
-              />
-            </div>
             
             <div className="media-items">
               {projectForm.mediaItems.map((item) => {
