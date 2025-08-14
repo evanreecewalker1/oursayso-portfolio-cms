@@ -2423,80 +2423,166 @@ const CMSApp = () => {
                     <h4>Current File:</h4>
                     <div className="current-file">
                       {projectForm.tileBackgroundFile.uploading ? (
-                        <div className="upload-progress">
-                          <div className="upload-spinner"></div>
-                          <div className="upload-info">
-                            <span className="file-name">Uploading {projectForm.tileBackgroundFile.name}...</span>
-                            <span className="upload-status">Please wait while we upload to Cloudinary</span>
+                        <div className="upload-progress-container">
+                          {/* Visual Progress Bar */}
+                          <div className="upload-progress-header">
+                            <div className="upload-spinner"></div>
+                            <span className="upload-title">
+                              {(() => {
+                                const isVideo = projectForm.tileBackgroundFile.name.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv|m4v)$/);
+                                return isVideo ? 
+                                  `🎬 Uploading Video to Portfolio Repository` :
+                                  `📸 Optimizing Image via Cloudinary`;
+                              })()}
+                            </span>
+                          </div>
+                          
+                          {/* Animated Progress Bar */}
+                          <div className="progress-bar-container">
+                            <div className="progress-bar">
+                              <div className="progress-fill"></div>
+                            </div>
+                          </div>
+                          
+                          <div className="upload-details">
+                            <span className="file-name-detail">{projectForm.tileBackgroundFile.name}</span>
+                            <span className="upload-status-detail">
+                              {(() => {
+                                const isVideo = projectForm.tileBackgroundFile.name.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv|m4v)$/);
+                                return isVideo ? 
+                                  "Will be available for offline iPad access" :
+                                  "Optimizing and storing to CDN";
+                              })()}
+                            </span>
                           </div>
                         </div>
                       ) : (
                         <>
                           {projectForm.tileBackgroundType === 'image' ? (
-                            <img 
-                              src={(() => {
-                                let displayUrl;
-                                if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
-                                  // For portfolio repository files, use local path directly
-                                  displayUrl = projectForm.tileBackgroundFile.localPath || projectForm.tileBackgroundFile.url;
-                                  console.log('📁 Portfolio tile image display URL:', displayUrl);
-                                } else if (projectForm.tileBackgroundFile.storageType === 'local') {
-                                  // For browser-stored files, get fresh display URL from hybrid service
-                                  displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.url;
-                                  console.log('🖼️ Local tile image display URL:', displayUrl);
-                                } else {
-                                  // For Cloudinary, use direct URL (never blob URLs for Cloudinary)
-                                  displayUrl = projectForm.tileBackgroundFile.url;
-                                  console.log('☁️ Cloudinary tile image display URL:', displayUrl);
-                                }
-                                
-                                // Defensive check: never render blob URLs that might be invalid
-                                if (displayUrl && displayUrl.startsWith('blob:')) {
-                                  console.warn('⚠️ Preventing display of potentially invalid blob URL:', displayUrl);
-                                  return projectForm.tileBackgroundFile.url || '/placeholder-image.png';
-                                }
-                                
-                                return displayUrl || '/placeholder-image.png';
-                              })()} 
-                              alt="Current tile background"
-                              className="current-thumbnail"
-                            />
+                            <div className="image-preview-container">
+                              {/* Upload Success Badge for Images */}
+                              <div className="upload-success-badge">
+                                <div className="success-icon">✅</div>
+                                <span>Image Upload Complete!</span>
+                              </div>
+                              
+                              {/* Enhanced Image Display */}
+                              <div className="image-preview-wrapper">
+                                <img 
+                                  src={(() => {
+                                    let displayUrl;
+                                    if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
+                                      // For portfolio repository files, use local path directly
+                                      displayUrl = projectForm.tileBackgroundFile.localPath || projectForm.tileBackgroundFile.url;
+                                      console.log('📁 Portfolio tile image display URL:', displayUrl);
+                                    } else if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                      // For browser-stored files, get fresh display URL from hybrid service
+                                      displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile) || projectForm.tileBackgroundFile.url;
+                                      console.log('🖼️ Local tile image display URL:', displayUrl);
+                                    } else {
+                                      // For Cloudinary, use direct URL (never blob URLs for Cloudinary)
+                                      displayUrl = projectForm.tileBackgroundFile.url;
+                                      console.log('☁️ Cloudinary tile image display URL:', displayUrl);
+                                    }
+                                    
+                                    // Defensive check: never render blob URLs that might be invalid
+                                    if (displayUrl && displayUrl.startsWith('blob:')) {
+                                      console.warn('⚠️ Preventing display of potentially invalid blob URL:', displayUrl);
+                                      return projectForm.tileBackgroundFile.url || '/placeholder-image.png';
+                                    }
+                                    
+                                    return displayUrl || '/placeholder-image.png';
+                                  })()} 
+                                  alt="Current tile background"
+                                  className="enhanced-image-preview"
+                                  style={{
+                                    maxWidth: '100%',
+                                    maxHeight: '300px',
+                                    borderRadius: '8px',
+                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                                    border: '2px solid #e5e7eb'
+                                  }}
+                                />
+                              </div>
+                              
+                              {/* Image Info Panel */}
+                              <div className="image-info-panel">
+                                <div className="image-status">
+                                  <span className="status-text">
+                                    {projectForm.tileBackgroundFile.storageType === 'cloudinary' ? 
+                                      '☁️ Optimized via Cloudinary CDN' : 
+                                      '💾 Stored locally'
+                                    }
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           ) : (
-                            <video 
-                              src={(() => {
-                                let displayUrl;
-                                if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
-                                  // For portfolio repository files, use local path directly
-                                  displayUrl = projectForm.tileBackgroundFile.localPath || projectForm.tileBackgroundFile.url;
-                                  console.log('📁 Portfolio tile video display URL:', displayUrl);
-                                } else if (projectForm.tileBackgroundFile.storageType === 'local') {
-                                  // For browser-stored files, get fresh display URL from hybrid service
-                                  displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
-                                  console.log('🎬 Local tile video display URL:', displayUrl);
-                                } else {
-                                  // For Cloudinary, use direct URL (never blob URLs for Cloudinary)
-                                  displayUrl = projectForm.tileBackgroundFile.url;
-                                  console.log('☁️ Cloudinary tile video display URL:', displayUrl);
-                                }
-                                
-                                // Defensive check: never render blob URLs that might be invalid
-                                if (displayUrl && displayUrl.startsWith('blob:')) {
-                                  console.warn('⚠️ Preventing display of potentially invalid blob URL for video:', displayUrl);
-                                  return null; // Return null to prevent video from loading
-                                }
-                                
-                                return displayUrl;
-                              })()}
-                              className="current-thumbnail"
-                              muted
-                            />
+                            <div className="video-preview-container">
+                              {/* Upload Success Badge */}
+                              <div className="upload-success-badge">
+                                <div className="success-icon">✅</div>
+                                <span>Video Upload Complete!</span>
+                              </div>
+                              
+                              {/* Enhanced Video Player */}
+                              <video 
+                                src={(() => {
+                                  let displayUrl;
+                                  if (projectForm.tileBackgroundFile.storageType === 'portfolio') {
+                                    // For portfolio repository files, use the GitHub raw URL for immediate preview
+                                    const fileName = projectForm.tileBackgroundFile.fileName || projectForm.tileBackgroundFile.name;
+                                    displayUrl = `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public/videos/${fileName}`;
+                                    console.log('📁 Portfolio video preview URL:', displayUrl);
+                                  } else if (projectForm.tileBackgroundFile.storageType === 'local') {
+                                    displayUrl = HybridMediaService.getDisplayUrl(projectForm.tileBackgroundFile);
+                                    console.log('🎬 Local video preview URL:', displayUrl);
+                                  } else {
+                                    displayUrl = projectForm.tileBackgroundFile.url;
+                                    console.log('☁️ Cloudinary video preview URL:', displayUrl);
+                                  }
+                                  
+                                  return displayUrl;
+                                })()}
+                                className="video-preview-player"
+                                controls
+                                muted
+                                preload="metadata"
+                                style={{
+                                  width: '100%',
+                                  maxWidth: '400px',
+                                  height: '225px',
+                                  borderRadius: '8px',
+                                  background: '#000'
+                                }}
+                                onLoadStart={() => console.log('🎬 Video loading started')}
+                                onLoadedData={() => console.log('✅ Video loaded successfully')}
+                                onError={(e) => console.error('❌ Video load error:', e)}
+                              />
+                              
+                              {/* Video Info Panel */}
+                              <div className="video-info-panel">
+                                <div className="video-status">
+                                  <span className="status-text">🎯 Ready for iPad offline access</span>
+                                </div>
+                              </div>
+                            </div>
                           )}
                           <div className="current-file-info">
                             <span className="file-name">
                               {projectForm.tileBackgroundFile.name}
-                              {projectForm.tileBackgroundFile.cloudinary && (
-                                <span className="cloudinary-badge">☁️ Cloudinary</span>
-                              )}
+                              {/* Enhanced storage type badges */}
+                              {(() => {
+                                const storageType = projectForm.tileBackgroundFile.storageType;
+                                if (storageType === 'portfolio') {
+                                  return <span className="storage-badge portfolio-badge">🎯 iPad Ready</span>;
+                                } else if (storageType === 'cloudinary' || projectForm.tileBackgroundFile.cloudinary) {
+                                  return <span className="storage-badge cloudinary-badge">☁️ Cloudinary</span>;
+                                } else if (storageType === 'local') {
+                                  return <span className="storage-badge local-badge">💾 Local</span>;
+                                }
+                                return null;
+                              })()}
                             </span>
                             {projectForm.tileBackgroundFile.dimensions && (
                               <span className="file-dims">
@@ -2578,29 +2664,6 @@ const CMSApp = () => {
                     <span className="error-text">{errors.tileImage || errors.tileVideo}</span>
                   )}
                   
-                  {/* Manual URL Input for Large Files */}
-                  <div className="manual-url-section" style={{marginTop: '20px', padding: '15px', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '8px'}}>
-                    <h4>Large File? Use Manual URL</h4>
-                    <p style={{fontSize: '14px', color: '#64748b', marginBottom: '10px'}}>
-                      For videos over 100MB, upload directly to Cloudinary and paste the URL here
-                    </p>
-                    <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
-                      <input
-                        type="text"
-                        placeholder="https://res.cloudinary.com/your-cloud/video/upload/..."
-                        value={manualUrlInput}
-                        onChange={(e) => setManualUrlInput(e.target.value)}
-                        style={{flex: 1, padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '4px'}}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleManualUrl(manualUrlInput, projectForm.tileBackgroundType === 'video' ? 'tileVideo' : 'tileImage')}
-                        style={{padding: '8px 16px', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer'}}
-                      >
-                        Add URL
-                      </button>
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -2618,8 +2681,22 @@ const CMSApp = () => {
                         <div className="upload-progress">
                           <div className="upload-spinner"></div>
                           <div className="upload-info">
-                            <span className="file-name">Uploading {projectForm.pageBackgroundFile.name}...</span>
-                            <span className="upload-status">Please wait while we upload to Cloudinary</span>
+                            <span className="file-name">
+                              {(() => {
+                                const isVideo = projectForm.pageBackgroundFile.name.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv|m4v)$/);
+                                return isVideo ? 
+                                  `🎬 Uploading ${projectForm.pageBackgroundFile.name} to portfolio repository...` :
+                                  `📸 Uploading ${projectForm.pageBackgroundFile.name}...`;
+                              })()}
+                            </span>
+                            <span className="upload-status">
+                              {(() => {
+                                const isVideo = projectForm.pageBackgroundFile.name.toLowerCase().match(/\.(mp4|mov|avi|webm|mkv|m4v)$/);
+                                return isVideo ? 
+                                  "Video will be available for offline access on iPad" :
+                                  "Image being optimized via Cloudinary CDN";
+                              })()}
+                            </span>
                           </div>
                         </div>
                       ) : (
@@ -2640,9 +2717,18 @@ const CMSApp = () => {
                           <div className="current-file-info">
                             <span className="file-name">
                               {projectForm.pageBackgroundFile.name}
-                              {projectForm.pageBackgroundFile.cloudinary && (
-                                <span className="cloudinary-badge">☁️ Cloudinary</span>
-                              )}
+                              {/* Enhanced storage type badges */}
+                              {(() => {
+                                const storageType = projectForm.pageBackgroundFile.storageType;
+                                if (storageType === 'portfolio') {
+                                  return <span className="storage-badge portfolio-badge">🎯 iPad Ready</span>;
+                                } else if (storageType === 'cloudinary' || projectForm.pageBackgroundFile.cloudinary) {
+                                  return <span className="storage-badge cloudinary-badge">☁️ Cloudinary</span>;
+                                } else if (storageType === 'local') {
+                                  return <span className="storage-badge local-badge">💾 Local</span>;
+                                }
+                                return null;
+                              })()}
                             </span>
                             {projectForm.pageBackgroundFile.dimensions && (
                               <span className="file-dims">
@@ -2696,48 +2782,6 @@ const CMSApp = () => {
             </div>
           </div>
 
-          {/* Manual Video Preview Section - Temporary Testing */}
-          <div className="form-section">
-            <div className="section-header">
-              <h3>🎬 Manual Video Preview URL (Testing)</h3>
-            </div>
-            <div className="manual-video-input">
-              <label htmlFor="videoPreviewUrl">Paste video URL for preview:</label>
-              <input
-                id="videoPreviewUrl"
-                type="url"
-                placeholder="https://example.com/your-video.mp4"
-                className="form-control"
-                style={{ marginBottom: '10px' }}
-              />
-              <button 
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => {
-                  const url = document.getElementById('videoPreviewUrl').value;
-                  if (url) {
-                    // Create a temporary video element to test the URL
-                    const video = document.createElement('video');
-                    video.src = url;
-                    video.style.width = '300px';
-                    video.style.height = '200px';
-                    video.controls = true;
-                    video.muted = true;
-                    
-                    // Replace or add video preview
-                    const container = document.getElementById('video-preview-container');
-                    container.innerHTML = '';
-                    container.appendChild(video);
-                  }
-                }}
-              >
-                Test Video Preview
-              </button>
-              <div id="video-preview-container" style={{ marginTop: '10px', border: '1px solid #ccc', minHeight: '50px', padding: '10px' }}>
-                <p style={{ color: '#666', margin: 0 }}>Video preview will appear here</p>
-              </div>
-            </div>
-          </div>
 
           {/* Media Items Section */}
           <div className="form-section">
@@ -2787,7 +2831,7 @@ const CMSApp = () => {
             </div>
             
             <div className="media-items">
-              {projectForm.mediaItems.map((item, index) => (
+              {projectForm.mediaItems.map((item) => (
                 <div key={item.id} className="media-item">
                   <div className="media-item-header">
                     <GripVertical size={16} className="drag-handle" />
@@ -2817,14 +2861,106 @@ const CMSApp = () => {
                   </div>
                   
                   <div className="media-upload-area">
-                    <div className="upload-zone small">
-                      <File size={32} />
-                      <p>Upload files for this {item.type}</p>
-                      {item.type === 'gallery' && <small>Recommended: 1920x1080px or larger</small>}
-                      {item.type === 'video' && <small>Recommended: MP4, under 50MB</small>}
-                      {item.type === 'pdf' && <small>PDF documents up to 10MB</small>}
-                      <small>Click to add files</small>
-                    </div>
+                    {/* Show uploaded files if any exist */}
+                    {item.files && item.files.length > 0 ? (
+                      <div className="uploaded-files">
+                        <div className="files-grid">
+                          {item.files.map((file, fileIndex) => (
+                            <div key={fileIndex} className="file-preview">
+                              {file.resourceType === 'image' || item.type === 'gallery' ? (
+                                <img 
+                                  src={file.url || file.preview} 
+                                  alt={file.name}
+                                  className="file-thumbnail"
+                                />
+                              ) : file.resourceType === 'video' || item.type === 'video' ? (
+                                <video 
+                                  src={file.url || file.preview} 
+                                  className="file-thumbnail"
+                                  muted
+                                />
+                              ) : (
+                                <div className="file-icon-preview">
+                                  <File size={32} />
+                                  <span className="file-name">{file.name}</span>
+                                </div>
+                              )}
+                              <button
+                                className="remove-file-btn"
+                                onClick={() => {
+                                  const updatedFiles = item.files.filter((_, index) => index !== fileIndex);
+                                  updateMediaItem(item.id, { files: updatedFiles });
+                                }}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        <button 
+                          className="add-more-files-btn"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.multiple = item.type === 'gallery';
+                            input.accept = item.type === 'gallery' ? 'image/*' : item.type === 'video' ? 'video/*' : '*/*';
+                            input.onchange = async (e) => {
+                              const files = Array.from(e.target.files || []);
+                              for (const file of files) {
+                                try {
+                                  const result = await HybridMediaService.uploadMedia(file, { projectId: projectForm.id });
+                                  const updatedFiles = [...(item.files || []), result];
+                                  updateMediaItem(item.id, { files: updatedFiles });
+                                } catch (error) {
+                                  console.error('Upload failed:', error);
+                                }
+                              }
+                            };
+                            input.click();
+                          }}
+                        >
+                          <Plus size={16} /> Add {item.type === 'gallery' ? 'More Images' : 'File'}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="upload-zone small"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.multiple = item.type === 'gallery';
+                          input.accept = item.type === 'gallery' ? 'image/*' : item.type === 'video' ? 'video/*' : '*/*';
+                          input.onchange = async (e) => {
+                            const files = Array.from(e.target.files || []);
+                            const uploadedFiles = [];
+                            for (const file of files) {
+                              try {
+                                const result = await HybridMediaService.uploadMedia(file, { projectId: projectForm.id });
+                                uploadedFiles.push(result);
+                              } catch (error) {
+                                console.error('Upload failed:', error);
+                              }
+                            }
+                            if (uploadedFiles.length > 0) {
+                              updateMediaItem(item.id, { files: uploadedFiles });
+                            }
+                          };
+                          input.click();
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <File size={32} />
+                        <p>Upload {item.type === 'gallery' ? 'images' : 'files'} for this {item.type}</p>
+                        {item.type === 'gallery' && (
+                          <>
+                            <small>📸 Upload multiple images at once</small>
+                            <small>Recommended: 1920x1080px or larger</small>
+                          </>
+                        )}
+                        {item.type === 'video' && <small>Recommended: MP4, under 50MB</small>}
+                        {item.type === 'pdf' && <small>PDF documents up to 10MB</small>}
+                        <small>Click to {item.type === 'gallery' ? 'select images' : 'add files'}</small>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -2974,11 +3110,77 @@ const CMSApp = () => {
                         {projectForm.mediaItems.length > 0 && (
                           <div className="page-media">
                             <h5>Media Items</h5>
-                            <div className="media-list">
+                            <div className="media-list-enhanced">
                               {projectForm.mediaItems.map((item) => (
-                                <div key={item.id} className="media-item-preview">
-                                  <span className="media-type">{item.type}</span>
-                                  <span className="media-title">{item.title || 'Untitled Media'}</span>
+                                <div key={item.id} className="media-item-preview-enhanced">
+                                  {/* Media Type Header */}
+                                  <div className="media-header">
+                                    <div className="media-type-badge">
+                                      {item.type === 'gallery' && '🖼️ Gallery'}
+                                      {item.type === 'video' && '🎬 Video'}
+                                      {item.type === 'pdf' && '📄 PDF'}
+                                      {item.type === 'case-study' && '📊 Case Study'}
+                                    </div>
+                                    <div className="media-title">
+                                      {item.title || 'Untitled Media'}
+                                      {item.files && item.files.length > 0 && item.type === 'gallery' && (
+                                        <span className="media-count">({item.files.length} images)</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Visual Preview */}
+                                  {item.files && item.files.length > 0 ? (
+                                    <div className="media-preview-content">
+                                      {item.type === 'gallery' ? (
+                                        <div className="gallery-thumbnail-grid">
+                                          {item.files.slice(0, 4).map((file, index) => (
+                                            <div key={index} className="gallery-thumb">
+                                              <img 
+                                                src={file.url || file.preview} 
+                                                alt={`Gallery ${index + 1}`}
+                                                style={{
+                                                  width: '100%',
+                                                  height: '60px',
+                                                  objectFit: 'cover',
+                                                  borderRadius: '4px'
+                                                }}
+                                              />
+                                            </div>
+                                          ))}
+                                          {item.files.length > 4 && (
+                                            <div className="gallery-more">+{item.files.length - 4}</div>
+                                          )}
+                                        </div>
+                                      ) : item.type === 'video' ? (
+                                        <div className="video-thumbnail">
+                                          <video 
+                                            src={item.files[0].url || item.files[0].preview}
+                                            style={{
+                                              width: '100%',
+                                              height: '80px',
+                                              objectFit: 'cover',
+                                              borderRadius: '4px'
+                                            }}
+                                            muted
+                                          />
+                                          <div className="video-overlay">▶️</div>
+                                        </div>
+                                      ) : (
+                                        <div className="file-icon">📁 {item.files.length} file(s)</div>
+                                      )}
+                                      
+                                      {/* Upload Success Badge */}
+                                      <div className="upload-success-mini">
+                                        <span className="success-check">✅</span>
+                                        <span>Uploaded</span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="empty-media-preview">
+                                      <span>No files uploaded yet</span>
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                             </div>
