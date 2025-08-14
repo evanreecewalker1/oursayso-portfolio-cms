@@ -14,7 +14,7 @@ const CMSApp = () => {
   console.log('🚀 ===== HYBRID MEDIA SYSTEM DEPLOYED ===== 🚀');
   console.log('🔍 DEBUG: CMS App is loading - HYBRID MEDIA VERSION!');
   console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
-  console.log('🆔 VERSION: 2024-08-13-v6-HYBRID-FORCE-DEPLOY');
+  console.log('🆔 VERSION: 2025-08-14-UX-GALLERY-VIDEO-PREVIEW-DEPLOY');
   console.log('⏰ LOADED AT:', new Date().toLocaleString());
   console.log('🚀 ========================================== 🚀');
   const { user, logout } = useAuth();
