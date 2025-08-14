@@ -1864,6 +1864,21 @@ const CMSApp = () => {
     };
   });
 
+  // UTF-8 encoding utility (same as ProjectDataService)
+  const utf8ToBase64 = (str) => {
+    try {
+      // First convert string to UTF-8 bytes, then to base64
+      // This handles Unicode characters that btoa() can't handle
+      return btoa(unescape(encodeURIComponent(str)));
+    } catch (error) {
+      console.error('❌ UTF-8 to Base64 encoding failed:', error);
+      // Fallback: try to sanitize the string first
+      const sanitized = str.replace(/[^\x00-\x7F]/g, ""); // Remove non-ASCII chars
+      console.log('⚠️ Using sanitized ASCII-only version for GitHub publish');
+      return btoa(sanitized);
+    }
+  };
+
   // GitHub API helper functions
   const uploadFileToGitHub = async (token, repo, path, content, message) => {
     const [owner, repoName] = repo.split('/');
@@ -1897,7 +1912,7 @@ const CMSApp = () => {
       },
       body: JSON.stringify({
         message,
-        content: btoa(encodeURIComponent(content).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode('0x' + p1))), // Base64 encode UTF-8 content
+        content: utf8ToBase64(content), // Proper UTF-8 to Base64 encoding
         ...(sha && { sha }) // Include SHA if updating existing file
       })
     });
@@ -3055,6 +3070,23 @@ const CMSApp = () => {
                                   />
                                   <div className="video-upload-success">
                                     <span className="success-indicator">✅ {file.storageType === 'portfolio' ? 'iPad Ready' : 'Uploaded'}</span>
+                                  </div>
+                                </div>
+                              ) : file.resourceType === 'raw' && file.name?.toLowerCase().endsWith('.pdf') || item.type === 'pdf' ? (
+                                <div className="pdf-preview">
+                                  <iframe
+                                    src={`${file.url || file.preview}#view=FitH`}
+                                    className="pdf-viewer"
+                                    title={`PDF Preview: ${file.name}`}
+                                    onLoad={() => console.log('✅ PDF preview loaded:', file.name)}
+                                    onError={(e) => console.error('❌ PDF preview error:', file.name, e)}
+                                  />
+                                  <div className="pdf-info">
+                                    <div className="pdf-icon">📄</div>
+                                    <span className="pdf-name">{file.name}</span>
+                                    <div className="pdf-upload-success">
+                                      <span className="success-indicator">✅ PDF Ready</span>
+                                    </div>
                                   </div>
                                 </div>
                               ) : (
