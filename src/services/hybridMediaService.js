@@ -15,7 +15,8 @@ class HybridMediaService {
     // Size thresholds
     this.imageCloudinaryMaxSize = 10 * 1024 * 1024; // 10MB - large images go local
     this.videoCloudinaryThreshold = 25 * 1024 * 1024; // 25MB - videos >= 25MB go to Cloudinary
-    this.videoLocalMaxSize = 500 * 1024 * 1024; // 500MB max for local videos
+    this.videoCloudinaryMaxSize = 100 * 1024 * 1024; // 100MB max for Cloudinary videos
+    this.videoLocalMaxSize = 25 * 1024 * 1024; // 25MB max for GitHub videos
   }
 
   // Determine storage method based on file type and size
@@ -23,8 +24,16 @@ class HybridMediaService {
     const extension = file.name.split('.').pop().toLowerCase();
     const fileSize = file.size;
 
-    // Video files - check size threshold
+    // Video files - check size thresholds
     if (this.videoTypes.includes(extension)) {
+      if (fileSize > this.videoCloudinaryMaxSize) {
+        return {
+          method: 'error',
+          type: 'video',
+          reason: `Video file too large (${this.formatFileSize(fileSize)}). Maximum supported size is ${this.formatFileSize(this.videoCloudinaryMaxSize)}. Please compress your video.`
+        };
+      }
+      
       if (fileSize >= this.videoCloudinaryThreshold) {
         return {
           method: 'cloudinary',
@@ -32,6 +41,7 @@ class HybridMediaService {
           reason: `Large video (${this.formatFileSize(fileSize)}) stored on Cloudinary for better performance`
         };
       }
+      
       return {
         method: 'local',
         type: 'video',
@@ -115,7 +125,10 @@ class HybridMediaService {
     });
 
     try {
-      if (storageDecision.method === 'cloudinary') {
+      if (storageDecision.method === 'error') {
+        console.error('❌ File upload blocked:', storageDecision.reason);
+        throw new Error(storageDecision.reason);
+      } else if (storageDecision.method === 'cloudinary') {
         return await this.uploadToCloudinary(file, options);
       } else {
         return await this.storeLocally(file, options);
@@ -145,25 +158,44 @@ class HybridMediaService {
       tags: ['portfolio', fileType, ...(options.tags || [])]
     };
     
-    const result = await CloudinaryService.uploadMedia(file, cloudinaryOptions);
-    
-    console.log(`✅ ${fileType} uploaded to Cloudinary successfully:`, {
-      fileName: file.name,
-      publicId: result.publicId,
-      url: result.url,
-      duration: result.duration || 'N/A',
-      fileSize: this.formatFileSize(result.bytes || file.size)
-    });
-    
-    return {
-      ...result,
-      storageType: 'cloudinary',
-      localPath: null,
-      // Add video-specific properties for consistency
-      preview: result.url,
-      needsServerUpload: false,
-      uploadedAt: new Date().toISOString()
-    };
+    try {
+      const result = await CloudinaryService.uploadMedia(file, cloudinaryOptions);
+      
+      console.log(`✅ ${fileType} uploaded to Cloudinary successfully:`, {
+        fileName: file.name,
+        publicId: result.publicId,
+        url: result.url,
+        duration: result.duration || 'N/A',
+        fileSize: this.formatFileSize(result.bytes || file.size)
+      });
+      
+      return {
+        ...result,
+        storageType: 'cloudinary',
+        localPath: null,
+        // Add video-specific properties for consistency
+        preview: result.url,
+        needsServerUpload: false,
+        uploadedAt: new Date().toISOString()
+      };
+    } catch (cloudinaryError) {
+      // Enhanced error handling with fallback for videos only
+      if (isVideo && file.size < this.videoLocalMaxSize) {
+        console.warn(`⚠️ Cloudinary upload failed for video, trying GitHub fallback:`, cloudinaryError.message);
+        console.log('🔄 Attempting GitHub repository upload as fallback...');
+        
+        try {
+          return await this.storeLocally(file, options);
+        } catch (fallbackError) {
+          console.error('❌ Both Cloudinary and GitHub upload failed:', fallbackError.message);
+          throw new Error(`Upload failed: Cloudinary (${cloudinaryError.message}) and GitHub fallback (${fallbackError.message}). File may be too large.`);
+        }
+      } else {
+        // For images or videos too large for GitHub, don't fallback
+        console.error('❌ Cloudinary upload failed with no fallback available:', cloudinaryError.message);
+        throw new Error(`Cloudinary upload failed: ${cloudinaryError.message}`);
+      }
+    }
   }
 
   // Store file locally (new logic for videos and large images)

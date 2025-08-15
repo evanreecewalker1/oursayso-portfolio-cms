@@ -19,10 +19,15 @@ const STORAGE_LIMIT = 15 * 1024 * 1024 * 1024; // 15GB in bytes
 class CloudinaryService {
   constructor() {
     // Fallback to hardcoded values if environment variables are not available
-    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+    this.uploadPreset = process.env.REACT_APP_CLOUDINARY_UPLOAD_PRESET || 'portfolio_uploads';
     this.apiKey = process.env.REACT_APP_CLOUDINARY_API_KEY || '188545171796635';
     this.apiSecret = process.env.REACT_APP_CLOUDINARY_API_SECRET || 'B8lQJoL1N13A2b2LhBXrHiGUumY';
     this.cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dnuni9dgl';
+    
+    // File size limits for different upload methods
+    this.maxSignedUploadSize = 100 * 1024 * 1024; // 100MB for signed uploads
+    this.maxUnsignedUploadSize = 10 * 1024 * 1024;  // 10MB for unsigned uploads
+    this.maxVideoSize = 100 * 1024 * 1024; // 100MB max for videos
     
     // Track bandwidth usage
     this.usage = {
@@ -72,23 +77,32 @@ class CloudinaryService {
   // Upload media (images and videos) to Cloudinary
   async uploadMedia(file, options = {}) {
     try {
-      console.log('📤 Uploading to Cloudinary:', file.name, file.type);
+      console.log('📤 Uploading to Cloudinary:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: this.formatFileSize(file.size),
+        uploadPreset: this.uploadPreset
+      });
       
       // Check storage limits
       if (this.usage.monthly + file.size > USAGE_LIMIT) {
         throw new Error('Monthly bandwidth limit would be exceeded');
       }
 
-      // For large video files, try unsigned upload first to avoid CORS issues
       const isVideoType = file.type.startsWith('video/');
-      const isLargeFile = file.size > 100 * 1024 * 1024; // 100MB+
       
-      if (isVideoType && isLargeFile) {
-        console.log('🔄 Attempting unsigned upload for large video file');
+      // Check file size limits for videos
+      if (isVideoType && file.size > this.maxVideoSize) {
+        throw new Error(`Video file size (${this.formatFileSize(file.size)}) exceeds maximum limit of ${this.formatFileSize(this.maxVideoSize)}. Please compress your video or use a smaller file.`);
+      }
+      
+      // For video files, always try unsigned upload first (better for CORS)
+      if (isVideoType) {
+        console.log('🎬 Using unsigned upload for video file to avoid CORS issues');
         try {
           return await this.uploadMediaUnsigned(file, options);
         } catch (unsignedError) {
-          console.warn('⚠️ Unsigned upload failed, trying signed upload:', unsignedError.message);
+          console.warn('⚠️ Unsigned video upload failed, trying signed upload:', unsignedError.message);
           // Continue to signed upload as fallback
         }
       }
@@ -212,10 +226,15 @@ class CloudinaryService {
     }
   }
 
-  // Unsigned upload method for large video files (to avoid CORS issues)
+  // Unsigned upload method for video files (to avoid CORS issues)
   async uploadMediaUnsigned(file, options = {}) {
     try {
-      console.log('📤 Unsigned upload to Cloudinary:', file.name, file.type);
+      console.log('📤 Unsigned upload to Cloudinary:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: this.formatFileSize(file.size),
+        uploadPreset: this.uploadPreset
+      });
       
       const formData = new FormData();
       formData.append('file', file);
@@ -232,12 +251,12 @@ class CloudinaryService {
       const isVideoType = file.type.startsWith('video/');
       const uploadUrl = `https://api.cloudinary.com/v1_1/${this.cloudName}/${isVideoType ? 'video' : 'image'}/upload`;
       
-      console.log('🔍 Unsigned upload attempt:', {
+      console.log('🔍 Unsigned upload request:', {
         uploadPreset: this.uploadPreset,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        uploadUrl: uploadUrl
+        cloudName: this.cloudName,
+        uploadUrl: uploadUrl,
+        hasFolder: !!options.folder,
+        hasTags: !!options.tags
       });
 
       const response = await fetch(uploadUrl, {
@@ -436,6 +455,15 @@ class CloudinaryService {
       console.error('❌ Delete failed:', error);
       throw error;
     }
+  }
+
+  // Format file size for display
+  formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
   // Bulk operations
