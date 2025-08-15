@@ -3794,7 +3794,7 @@ const CMSApp = () => {
                         
                         {/* TEST: Custom Preview Controls - Should Always Show */}
                         <div style={{backgroundColor: 'red', padding: '20px', margin: '20px 0', border: '3px solid blue', color: 'white'}}>
-                          <h2>🧪 TEST: CUSTOM PREVIEW CONTROLS</h2>
+                          <h1 style={{fontSize: '50px'}}>🚨 URGENT: FINAL TEST - IF YOU SEE THIS, NETLIFY IS WORKING! 🚨</h1>
                           <button 
                             style={{padding: '10px 20px', fontSize: '16px', backgroundColor: 'yellow', color: 'black', border: '2px solid green'}}
                             onClick={() => alert('Custom preview button clicked!')}
