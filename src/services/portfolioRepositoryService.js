@@ -100,36 +100,89 @@ class PortfolioRepositoryService {
   // Write large video file to GitHub repository via Git LFS
   async writeVideoToRepositoryWithLFS(file, projectId, fileName) {
     try {
-      console.log('📦 Large video detected - preparing for Git LFS upload:', fileName);
+      console.log('📦 Large video detected - uploading via automated Git LFS service:', fileName);
       
-      // Create the target filename
-      const videoFileName = `${projectId}-${Date.now()}-${this.sanitizeFileName(fileName)}`;
-      const githubPath = `${this.videosPath}/${videoFileName}`;
-      const relativePath = `/videos/${videoFileName}`;
-      
-      // Create a download link for manual upload
-      this.createDownloadForManualUpload(file, videoFileName, relativePath);
-      
-      // Return a temporary result that indicates manual upload required
-      console.log('✅ Large video prepared for manual Git LFS upload');
-      console.log('📋 File download created - follow instructions for manual upload');
-      
-      return {
-        success: true,
-        localPath: relativePath,
-        githubPath: githubPath,
-        fileName: videoFileName,
-        size: file.size,
-        type: file.type,
-        commitSha: null,
-        commitUrl: null,
-        uploadMethod: 'lfs-manual',
-        requiresManualUpload: true
-      };
+      // Try automated upload service first
+      try {
+        return await this.uploadViaLFSService(file, projectId, fileName);
+      } catch (serviceError) {
+        console.warn('⚠️ Automated LFS service unavailable, falling back to manual process:', serviceError.message);
+        return await this.fallbackToManualProcess(file, projectId, fileName);
+      }
     } catch (error) {
-      console.error('❌ Failed to prepare large video for LFS:', error);
+      console.error('❌ Failed to upload large video via LFS:', error);
       throw error;
     }
+  }
+
+  // Upload via automated Git LFS service
+  async uploadViaLFSService(file, projectId, fileName) {
+    console.log('🚀 Uploading via automated Git LFS service...');
+    
+    const formData = new FormData();
+    formData.append('video', file);
+    formData.append('projectId', projectId);
+    formData.append('originalName', fileName);
+    
+    const response = await fetch('http://localhost:3001/upload-large-video', {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Upload service error: ${errorData.error}`);
+    }
+    
+    const result = await response.json();
+    
+    console.log('✅ Large video uploaded automatically via Git LFS service');
+    console.log('📁 File committed and pushed to GitHub repository');
+    console.log('🔗 Commit:', result.commitUrl);
+    
+    return result;
+  }
+
+  // Fallback to manual process if service is unavailable
+  async fallbackToManualProcess(file, projectId, fileName) {
+    console.log('📋 Using manual upload process as fallback...');
+    
+    // Create the target filename
+    const videoFileName = `${projectId}-${Date.now()}-${this.sanitizeFileName(fileName)}`;
+    const githubPath = `${this.videosPath}/${videoFileName}`;
+    const relativePath = `/videos/${videoFileName}`;
+    
+    // Create a download link for manual upload
+    this.createDownloadForManualUpload(file, videoFileName, relativePath);
+    
+    // Return a temporary result that indicates manual upload required
+    console.log('✅ Large video prepared for manual Git LFS upload');
+    console.log('📋 File download created - follow instructions for manual upload');
+    
+    return {
+      success: true,
+      localPath: relativePath,
+      githubPath: githubPath,
+      fileName: videoFileName,
+      size: file.size,
+      type: file.type,
+      commitSha: null,
+      commitUrl: null,
+      uploadMethod: 'lfs-manual',
+      requiresManualUpload: true,
+      publicId: `portfolio_${Date.now()}`,
+      url: relativePath,
+      width: null,
+      height: null,
+      format: fileName.split('.').pop().toLowerCase(),
+      bytes: file.size,
+      duration: null,
+      resourceType: 'video',
+      storageType: 'portfolio',
+      uploadedAt: new Date().toISOString(),
+      preview: relativePath,
+      needsServerUpload: false
+    };
   }
 
   // Create a download link for manual Git LFS upload
