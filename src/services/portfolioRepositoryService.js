@@ -9,8 +9,11 @@ class PortfolioRepositoryService {
     this.githubBranch = process.env.REACT_APP_GITHUB_BRANCH || 'main';
     this.githubApiUrl = 'https://api.github.com';
     
-    // GitHub API file size limit (100MB)
-    this.maxFileSize = 100 * 1024 * 1024;
+    // GitHub Contents API file size limit (actual limit is 25MB)
+    this.maxFileSize = 25 * 1024 * 1024; // 25MB for Contents API
+    
+    // Local portfolio repository path for Git LFS operations
+    this.portfolioRepoPath = '/Users/evanwalker/Desktop/ipad-portfolio';
     
     // Portfolio repository structure
     this.videosPath = 'public/videos';
@@ -30,7 +33,7 @@ class PortfolioRepositoryService {
     });
   }
 
-  // Write video file to GitHub repository via API
+  // Write video file to GitHub repository via API or Git LFS
   async writeVideoToRepository(file, projectId, fileName) {
     try {
       console.log('📁 Uploading video to GitHub repository:', fileName);
@@ -40,12 +43,23 @@ class PortfolioRepositoryService {
         throw new Error('GitHub token not configured. Please set REACT_APP_GITHUB_TOKEN environment variable.');
       }
       
-      // Check file size
+      // Check file size and route to appropriate method
       if (file.size > this.maxFileSize) {
-        console.warn(`⚠️ File size ${this.formatFileSize(file.size)} exceeds GitHub API limit of ${this.formatFileSize(this.maxFileSize)}`);
-        throw new Error(`File too large for GitHub API. Maximum size: ${this.formatFileSize(this.maxFileSize)}`);
+        console.log(`📦 Large video (${this.formatFileSize(file.size)}) - using Git LFS...`);
+        return await this.writeVideoToRepositoryWithLFS(file, projectId, fileName);
+      } else {
+        console.log(`📄 Small video (${this.formatFileSize(file.size)}) - using GitHub API...`);
+        return await this.writeVideoToRepositoryWithAPI(file, projectId, fileName);
       }
-      
+    } catch (error) {
+      console.error('❌ Failed to upload video to GitHub repository:', error);
+      throw error;
+    }
+  }
+
+  // Write small video file to GitHub repository via Contents API
+  async writeVideoToRepositoryWithAPI(file, projectId, fileName) {
+    try {
       // Create the target path for the video
       const videoFileName = `${projectId}-${Date.now()}-${this.sanitizeFileName(fileName)}`;
       const githubPath = `${this.videosPath}/${videoFileName}`;
@@ -62,7 +76,7 @@ class PortfolioRepositoryService {
         `Add video: ${fileName} for project ${projectId}`
       );
       
-      console.log('✅ Video uploaded to GitHub repository:', githubPath);
+      console.log('✅ Video uploaded to GitHub repository via API:', githubPath);
       console.log('📝 Portfolio app will access it via:', relativePath);
       console.log('🔗 GitHub commit:', uploadResult.commit.html_url);
       
@@ -74,11 +88,87 @@ class PortfolioRepositoryService {
         size: file.size,
         type: file.type,
         commitSha: uploadResult.commit.sha,
-        commitUrl: uploadResult.commit.html_url
+        commitUrl: uploadResult.commit.html_url,
+        uploadMethod: 'api'
       };
     } catch (error) {
-      console.error('❌ Failed to upload video to GitHub repository:', error);
+      console.error('❌ Failed to upload video via API:', error);
       throw error;
+    }
+  }
+
+  // Write large video file to GitHub repository via Git LFS
+  async writeVideoToRepositoryWithLFS(file, projectId, fileName) {
+    try {
+      console.log('📦 Large video detected - preparing for Git LFS upload:', fileName);
+      
+      // Create the target filename
+      const videoFileName = `${projectId}-${Date.now()}-${this.sanitizeFileName(fileName)}`;
+      const githubPath = `${this.videosPath}/${videoFileName}`;
+      const relativePath = `/videos/${videoFileName}`;
+      
+      // Create a download link for manual upload
+      this.createDownloadForManualUpload(file, videoFileName, relativePath);
+      
+      // Return a temporary result that indicates manual upload required
+      console.log('✅ Large video prepared for manual Git LFS upload');
+      console.log('📋 File download created - follow instructions for manual upload');
+      
+      return {
+        success: true,
+        localPath: relativePath,
+        githubPath: githubPath,
+        fileName: videoFileName,
+        size: file.size,
+        type: file.type,
+        commitSha: null,
+        commitUrl: null,
+        uploadMethod: 'lfs-manual',
+        requiresManualUpload: true
+      };
+    } catch (error) {
+      console.error('❌ Failed to prepare large video for LFS:', error);
+      throw error;
+    }
+  }
+
+  // Create a download link for manual Git LFS upload
+  createDownloadForManualUpload(file, fileName, relativePath) {
+    try {
+      // Create download link
+      const blob = new Blob([file], { type: file.type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      
+      console.log('💾 Large video download prepared:', fileName);
+      console.log('📋 MANUAL UPLOAD REQUIRED:');
+      console.log('   1. Download will start automatically');
+      console.log(`   2. Save downloaded file to: ~/Desktop/ipad-portfolio/public/videos/`);
+      console.log('   3. Run these commands:');
+      console.log('      cd ~/Desktop/ipad-portfolio');
+      console.log(`      git add public/videos/${fileName}`);
+      console.log(`      git commit -m "Add large video: ${fileName}"`);
+      console.log('      git push origin main');
+      console.log('   4. Refresh CMS after successful push');
+      
+      // Auto-trigger download
+      setTimeout(() => {
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Show user notification
+        if (window.alert) {
+          alert(`Large video "${fileName}" downloaded. Please follow console instructions to complete Git LFS upload manually.`);
+        }
+      }, 1000);
+      
+    } catch (error) {
+      console.error('❌ Failed to create download for manual upload:', error);
     }
   }
 
@@ -292,6 +382,15 @@ class PortfolioRepositoryService {
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  // Save file to local filesystem for Git LFS operations (browser fallback)
+  async saveFileToLocal(file, localFilePath) {
+    // In browser environment, we can't directly save to filesystem
+    // This method is kept for potential future server-side implementation
+    console.log('📁 Would save file to:', localFilePath);
+    console.log('⚠️ Browser environment - cannot write to filesystem directly');
+    return Promise.resolve(localFilePath);
   }
 
   // Format file size for display

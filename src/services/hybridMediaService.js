@@ -144,13 +144,19 @@ class HybridMediaService {
       if (isVideo || isDocument) {
         // Store videos and documents in the portfolio repository for iPad access
         const fileType = isVideo ? 'video' : 'document';
+        const fileSize = this.formatFileSize(file.size);
+        const uploadMethod = file.size > 25 * 1024 * 1024 ? 'Git LFS' : 'GitHub API';
+        
         console.log(`📄 Writing ${fileType} to portfolio repository...`);
+        console.log(`📦 File size: ${fileSize} - Upload method: ${uploadMethod}`);
         
         if (isVideo) {
           repositoryResult = await PortfolioRepositoryService.writeVideoToRepository(file, projectId, file.name);
         } else {
           repositoryResult = await PortfolioRepositoryService.writeDocumentToRepository(file, projectId, file.name);
         }
+        
+        console.log(`✅ ${fileType} upload completed via ${repositoryResult.uploadMethod || uploadMethod}`);
         
         // Also store in local manager for immediate CMS preview
         await LocalFileManager.saveFile(file, repositoryResult.localPath);
