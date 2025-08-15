@@ -119,14 +119,21 @@ class PortfolioRepositoryService {
   async uploadViaLFSService(file, projectId, fileName) {
     console.log('🚀 Uploading via automated Git LFS service...');
     
+    // Check if we're in local development vs production
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const uploadServiceUrl = isLocal 
+      ? 'http://localhost:3001/upload-large-video'
+      : 'https://localhost:3001/upload-large-video'; // This will fail in production, triggering fallback
+    
     const formData = new FormData();
     formData.append('video', file);
     formData.append('projectId', projectId);
     formData.append('originalName', fileName);
     
-    const response = await fetch('http://localhost:3001/upload-large-video', {
+    const response = await fetch(uploadServiceUrl, {
       method: 'POST',
-      body: formData
+      body: formData,
+      mode: 'cors'
     });
     
     if (!response.ok) {
@@ -185,7 +192,7 @@ class PortfolioRepositoryService {
     };
   }
 
-  // Create a download link for manual Git LFS upload
+  // Create a download link for manual Git LFS upload with better automation
   createDownloadForManualUpload(file, fileName, relativePath) {
     try {
       // Create download link
@@ -198,21 +205,22 @@ class PortfolioRepositoryService {
       document.body.appendChild(a);
       
       console.log('🎬='.repeat(50));
-      console.log('🎬 LARGE VIDEO MANUAL UPLOAD INSTRUCTIONS');
+      console.log('🎬 LARGE VIDEO UPLOAD - AUTOMATED HELPER');
       console.log('🎬='.repeat(50));
       console.log(`📁 File: ${fileName}`);
       console.log('📥 Download will start automatically in 1 second');
       console.log('');
-      console.log('📋 STEP 1: File will download automatically');
-      console.log(`📋 STEP 2: Move file to ~/Desktop/ipad-portfolio/public/videos/`);
-      console.log('📋 STEP 3: Run these commands in Terminal:');
+      console.log('📋 OPTION 1 - EASIEST (One Command):');
+      console.log(`   ~/Desktop/upload-large-video.sh ~/Downloads/${fileName}`);
       console.log('');
-      console.log('   cd ~/Desktop/ipad-portfolio');
-      console.log(`   git add public/videos/${fileName}`);
-      console.log(`   git commit -m "Add large video: ${fileName}"`);
-      console.log('   git push origin main');
-      console.log('');
-      console.log('📋 STEP 4: Refresh CMS after successful push');
+      console.log('📋 OPTION 2 - Manual Commands:');
+      console.log('   1. Move file to: ~/Desktop/ipad-portfolio/public/videos/general/');
+      console.log('   2. Run:');
+      console.log('      cd ~/Desktop/ipad-portfolio');
+      console.log(`      git add public/videos/general/${fileName}`);
+      console.log(`      git commit -m "Add large video: ${fileName}"`);
+      console.log('      git push origin main');
+      console.log('   3. Refresh CMS');
       console.log('🎬='.repeat(50));
       
       // Auto-trigger download
@@ -221,12 +229,26 @@ class PortfolioRepositoryService {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        // Show user notification with detailed instructions
-        if (window.confirm) {
-          const message = `🎬 LARGE VIDEO DOWNLOAD COMPLETE!\n\nFile: ${fileName}\n\n📋 NEXT STEPS:\n1. File saved to Downloads\n2. Move it to: ~/Desktop/ipad-portfolio/public/videos/\n3. Run in Terminal:\n   cd ~/Desktop/ipad-portfolio\n   git add public/videos/${fileName}\n   git commit -m "Add large video: ${fileName}"\n   git push origin main\n4. Refresh CMS\n\nClick OK to continue, or check console for detailed instructions.`;
-          
+        // Enhanced user notification
+        const scriptPath = '~/Desktop/upload-large-video.sh';
+        const downloadedFileName = fileName;
+        const message = `🎬 LARGE VIDEO READY FOR UPLOAD!\n\nFile Downloaded: ${downloadedFileName}\n\n✨ EASIEST METHOD:\nRun this single command in Terminal:\n${scriptPath} ~/Downloads/${downloadedFileName}\n\n📋 OR MANUAL METHOD:\n1. Move file to: ~/Desktop/ipad-portfolio/public/videos/general/\n2. Run Git commands (see console)\n\n🔄 Refresh CMS after upload completes\n\nThe helper script will handle everything automatically!`;
+        
+        if (window.alert) {
           window.alert(message);
         }
+        
+        // Also copy the helper command to clipboard if possible
+        if (navigator.clipboard) {
+          const command = `${scriptPath} ~/Downloads/${downloadedFileName}`;
+          navigator.clipboard.writeText(command).then(() => {
+            console.log('✅ Helper command copied to clipboard!');
+            console.log(`📋 Paste this in Terminal: ${command}`);
+          }).catch(err => {
+            console.log('❌ Could not copy to clipboard:', err);
+          });
+        }
+        
       }, 1000);
       
     } catch (error) {

@@ -8,7 +8,7 @@
   GENERATE_SOURCEMAP = "false"
   DISABLE_ESLINT_PLUGIN = "true"
   SKIP_PREFLIGHT_CHECK = "true"
-  NETLIFY_CACHE_BUST = "2025-08-15-custom-preview"
+  NETLIFY_CACHE_BUST = "2025-08-15-lfs-csp-fix"
 
 # Redirect rules for React Router (SPA)
 [[redirects]]
@@ -24,7 +24,7 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.github.com https://raw.githubusercontent.com https://api.netlify.com https://api.cloudinary.com https://res.cloudinary.com; frame-src 'none';"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https: blob:; media-src 'self' data: https: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' http://localhost:3001 https://localhost:3001 https://api.github.com https://raw.githubusercontent.com https://api.netlify.com https://api.cloudinary.com https://res.cloudinary.com; frame-src 'none';"
 
 # Cache static assets
 [[headers]]
