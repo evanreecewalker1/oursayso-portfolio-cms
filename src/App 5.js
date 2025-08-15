@@ -2809,11 +2809,6 @@ const CMSApp = () => {
   if (currentView === 'edit-project') {
     return (
       <div className="cms-container">
-        
-        {/* GLOBAL TEST - SHOULD ALWAYS BE VISIBLE */}
-        <div style={{position: 'fixed', top: '10px', left: '10px', zIndex: '9999', backgroundColor: 'red', padding: '20px', border: '5px solid blue', color: 'white', fontSize: '20px'}}>
-          🚨 GLOBAL TEST BOX - ALWAYS VISIBLE! 🚨
-        </div>
         <div className="cms-header">
           <button 
             className="back-btn"
@@ -3796,19 +3791,6 @@ const CMSApp = () => {
                       </div>
                       
                       <div className="page-content">
-                        
-                        {/* TEST: Custom Preview Controls - Should Always Show */}
-                        <div style={{backgroundColor: 'red', padding: '20px', margin: '20px 0', border: '3px solid blue', color: 'white'}}>
-                          <h1 style={{fontSize: '50px'}}>🚨 URGENT: FINAL TEST - IF YOU SEE THIS, NETLIFY IS WORKING! 🚨</h1>
-                          <button 
-                            style={{padding: '10px 20px', fontSize: '16px', backgroundColor: 'yellow', color: 'black', border: '2px solid green'}}
-                            onClick={() => alert('Custom preview button clicked!')}
-                          >
-                            📷 TEST Add Custom Preview
-                          </button>
-                          <p>If you can see this, the controls CAN render - the issue is conditional logic</p>
-                        </div>
-                        
                         <p className="page-description">
                           {projectForm.description || 'Project description will appear here...'}
                         </p>
@@ -3817,9 +3799,7 @@ const CMSApp = () => {
                           <div className="page-media">
                             <h5>Media Items</h5>
                             <div className="media-list-enhanced">
-                              {projectForm.mediaItems.map((item) => {
-                                console.log('🔍 DEBUG: Media item:', item.id, 'Type:', item.type, 'Title:', item.title);
-                                return (
+                              {projectForm.mediaItems.map((item) => (
                                 <div key={item.id} className="media-item-preview-enhanced">
                                   {/* Media Type Header */}
                                   <div className="media-header">
@@ -3875,6 +3855,7 @@ const CMSApp = () => {
                                           )}
                                         </div>
                                       ) : item.type === 'video' ? (
+                                        (() => console.log('🎥 DEBUG: Rendering video item:', item.id, item.title, item.type))(),
                                         <div className="video-thumbnail-enhanced">
                                           <video 
                                             src={(() => {
@@ -3972,8 +3953,7 @@ const CMSApp = () => {
                                     </div>
                                   )}
                                 </div>
-                              );
-                              })}
+                              ))}
                             </div>
                           </div>
                         )}
