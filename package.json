@@ -1,6 +1,6 @@
 {
   "name": "oursayso",
-  "version": "0.1.2-video-fix-deploy",
+  "version": "0.1.3-custom-preview-deploy",
   "private": true,
   "dependencies": {
     "@cloudinary/react": "^1.14.3",
