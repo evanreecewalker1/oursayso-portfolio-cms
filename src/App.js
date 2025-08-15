@@ -2097,10 +2097,76 @@ const CMSApp = () => {
     return converted;
   };
 
-  const generatePortfolioJSON = () => {
+  const validateVideoFiles = async (projects) => {
+    console.log('🎬 Validating video files...');
+    const issues = [];
+    
+    for (const project of projects) {
+      if (project.mediaItems) {
+        for (const mediaItem of project.mediaItems) {
+          if (mediaItem.type === 'video' && mediaItem.files) {
+            for (const file of mediaItem.files) {
+              if (file.url && file.url.startsWith('/videos/')) {
+                try {
+                  // For GitHub-hosted videos, check if file exists in repository
+                  const githubUrl = `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public${file.url}`;
+                  const response = await fetch(githubUrl, { method: 'HEAD' });
+                  
+                  if (!response.ok) {
+                    issues.push({
+                      projectTitle: project.title,
+                      videoFile: file.name,
+                      expectedPath: file.url,
+                      issue: `Video file not found in repository (HTTP ${response.status})`
+                    });
+                    console.warn(`❌ Missing video: ${file.url} in project "${project.title}"`);
+                  } else {
+                    console.log(`✅ Video verified: ${file.url}`);
+                  }
+                } catch (error) {
+                  issues.push({
+                    projectTitle: project.title,
+                    videoFile: file.name,
+                    expectedPath: file.url,
+                    issue: `Network error checking video: ${error.message}`
+                  });
+                  console.error(`❌ Error checking video ${file.url}:`, error);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return issues;
+  };
+
+  const generatePortfolioJSON = async () => {
     console.log('🔍 DEBUG: Starting JSON generation...');
     console.log('🔍 DEBUG: Current projects state (page 1):', projects);
     console.log('🔍 DEBUG: Current projects state (page 2):', page2Projects);
+    
+    // Validate video files before publishing
+    const allProjects = [...projects, ...page2Projects];
+    const videoIssues = await validateVideoFiles(allProjects);
+    
+    if (videoIssues.length > 0) {
+      console.warn('⚠️ Video validation issues found:', videoIssues);
+      
+      const issueDetails = videoIssues.map(issue => 
+        `• ${issue.projectTitle}: ${issue.videoFile} - ${issue.issue}`
+      ).join('\n');
+      
+      const userChoice = window.confirm(
+        `⚠️ Video Validation Issues Found:\n\n${issueDetails}\n\nThese videos may show "not available" in the published portfolio.\n\nDo you want to continue publishing anyway?`
+      );
+      
+      if (!userChoice) {
+        console.log('🚫 Publishing cancelled due to video validation issues');
+        return;
+      }
+    }
     
     // Convert page 1 projects to portfolio format
     const portfolioProjects = projects.map((project, index) => 
@@ -2718,7 +2784,13 @@ const CMSApp = () => {
       console.log('🔍 DEBUG: Page2Projects before JSON generation:', page2Projects);
       
       // Generate JSON data
-      const jsonData = generatePortfolioJSON();
+      const jsonData = await generatePortfolioJSON();
+      
+      // Check if generation was cancelled due to video issues
+      if (!jsonData) {
+        console.log('🚫 Publication cancelled');
+        return;
+      }
       
       // Deploy to Netlify
       const result = await deployToNetlify(jsonData);
@@ -2795,8 +2867,12 @@ const CMSApp = () => {
   };
 
   // Development helper to preview generated JSON
-  const previewGeneratedJSON = () => {
-    const jsonData = generatePortfolioJSON();
+  const previewGeneratedJSON = async () => {
+    const jsonData = await generatePortfolioJSON();
+    if (!jsonData) {
+      console.log('🚫 JSON generation cancelled due to video issues');
+      return;
+    }
     console.log('Generated Portfolio JSON:', jsonData);
     
     // Create a downloadable JSON file for testing
