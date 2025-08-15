@@ -8,7 +8,7 @@
   GENERATE_SOURCEMAP = "false"
   DISABLE_ESLINT_PLUGIN = "true"
   SKIP_PREFLIGHT_CHECK = "true"
-  NETLIFY_CACHE_BUST = "2025-08-15-lfs-csp-fix"
+  NETLIFY_CACHE_BUST = "2025-08-15-cloudinary-videos"
 
 # Redirect rules for React Router (SPA)
 [[redirects]]

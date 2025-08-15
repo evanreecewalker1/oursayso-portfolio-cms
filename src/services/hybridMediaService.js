@@ -14,6 +14,7 @@ class HybridMediaService {
     
     // Size thresholds
     this.imageCloudinaryMaxSize = 10 * 1024 * 1024; // 10MB - large images go local
+    this.videoCloudinaryThreshold = 25 * 1024 * 1024; // 25MB - videos >= 25MB go to Cloudinary
     this.videoLocalMaxSize = 500 * 1024 * 1024; // 500MB max for local videos
   }
 
@@ -22,12 +23,19 @@ class HybridMediaService {
     const extension = file.name.split('.').pop().toLowerCase();
     const fileSize = file.size;
 
-    // Video files always go to portfolio repository for iPad access
+    // Video files - check size threshold
     if (this.videoTypes.includes(extension)) {
+      if (fileSize >= this.videoCloudinaryThreshold) {
+        return {
+          method: 'cloudinary',
+          type: 'video',
+          reason: `Large video (${this.formatFileSize(fileSize)}) stored on Cloudinary for better performance`
+        };
+      }
       return {
         method: 'local',
         type: 'video',
-        reason: 'Video files stored in portfolio repository for offline iPad capability'
+        reason: `Small video (${this.formatFileSize(fileSize)}) stored in portfolio repository for offline iPad capability`
       };
     }
 
@@ -97,10 +105,12 @@ class HybridMediaService {
     
     const storageDecision = this.getStorageMethod(file);
     
-    console.log(`📁 Hybrid Upload Decision:`, {
+    console.log(`📁 HYBRID UPLOAD DECISION:`, {
       fileName: file.name,
-      size: this.formatFileSize(file.size),
-      storageMethod: storageDecision.method,
+      fileSize: this.formatFileSize(file.size),
+      fileType: storageDecision.type,
+      storageMethod: storageDecision.method.toUpperCase(),
+      destination: storageDecision.method === 'cloudinary' ? 'Cloudinary CDN' : 'GitHub Repository',
       reason: storageDecision.reason
     });
 
@@ -118,14 +128,41 @@ class HybridMediaService {
 
   // Upload to Cloudinary (existing logic) - NO FALLBACK
   async uploadToCloudinary(file, options = {}) {
-    console.log('☁️ Uploading to Cloudinary:', file.name);
+    const isVideo = this.videoTypes.includes(file.name.split('.').pop().toLowerCase());
+    const fileType = isVideo ? 'video' : 'image';
     
-    const result = await CloudinaryService.uploadMedia(file, options);
+    console.log(`☁️ Uploading ${fileType} to Cloudinary:`, {
+      fileName: file.name,
+      fileSize: this.formatFileSize(file.size),
+      fileType: fileType,
+      reason: 'Large file or image optimization via Cloudinary CDN'
+    });
+    
+    // Add folder structure for portfolio videos
+    const cloudinaryOptions = {
+      ...options,
+      folder: isVideo ? 'portfolio/videos' : options.folder || 'portfolio',
+      tags: ['portfolio', fileType, ...(options.tags || [])]
+    };
+    
+    const result = await CloudinaryService.uploadMedia(file, cloudinaryOptions);
+    
+    console.log(`✅ ${fileType} uploaded to Cloudinary successfully:`, {
+      fileName: file.name,
+      publicId: result.publicId,
+      url: result.url,
+      duration: result.duration || 'N/A',
+      fileSize: this.formatFileSize(result.bytes || file.size)
+    });
     
     return {
       ...result,
       storageType: 'cloudinary',
-      localPath: null
+      localPath: null,
+      // Add video-specific properties for consistency
+      preview: result.url,
+      needsServerUpload: false,
+      uploadedAt: new Date().toISOString()
     };
   }
 
