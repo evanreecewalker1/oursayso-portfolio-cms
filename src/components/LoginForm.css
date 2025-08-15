@@ -294,6 +294,27 @@
   line-height: 1.5;
 }
 
+.version-info {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.version-string {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0 0 4px 0;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.build-string {
+  font-size: 10px;
+  color: #9ca3af;
+  margin: 0;
+  opacity: 0.6;
+  font-weight: 400;
+}
+
 /* Loading State */
 .login-loading {
   text-align: center;

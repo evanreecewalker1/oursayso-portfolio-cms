@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getShortVersionString, getBuildString } from '../utils/version';
 import './LoginForm.css';
-
-// Version number - update this with each deployment
-const APP_VERSION = 'v1.4.2-debug-video-routing';
 
 const LoginForm = () => {
   const { login, isLoading } = useAuth();
@@ -167,15 +165,10 @@ const LoginForm = () => {
           <p className="login-help">
             Contact your team administrator if you need access
           </p>
-          <p style={{
-            fontSize: '10px',
-            color: '#c0c0c0',
-            marginTop: '15px',
-            textAlign: 'center',
-            opacity: 0.7
-          }}>
-            {APP_VERSION}
-          </p>
+          <div className="version-info">
+            <p className="version-string">{getShortVersionString()}</p>
+            <p className="build-string">{getBuildString()}</p>
+          </div>
         </div>
       </div>
     </div>

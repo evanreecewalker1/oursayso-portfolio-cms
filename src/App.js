@@ -11,6 +11,7 @@ import CloudinaryService from './services/cloudinaryConfig';
 import HybridMediaService from './services/hybridMediaService';
 import ProjectDataService from './services/projectDataService';
 import GalleryBuilder from './components/GalleryBuilder';
+import { getVersionString, getBuildString } from './utils/version';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
@@ -38,6 +39,10 @@ const CMSApp = () => {
   const [currentMediaItem, setCurrentMediaItem] = useState(null);
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   
+  // Upload progress tracking
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [activeUploads, setActiveUploads] = useState(new Set());
+  
   // Auto-scroll and status management
   const updateStatus = (msg, type = 'info', duration = 3000) => {
     setStatusMessage(msg);
@@ -52,6 +57,57 @@ const CMSApp = () => {
   
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Upload area state management
+  const isUploadActive = (type) => {
+    return Array.from(activeUploads).some(uploadId => uploadId.startsWith(type));
+  };
+  
+  // Upload progress management
+  const startUpload = (uploadId, fileName, fileSize) => {
+    setActiveUploads(prev => new Set(prev).add(uploadId));
+    setUploadProgress(prev => ({
+      ...prev,
+      [uploadId]: {
+        fileName,
+        fileSize,
+        progress: 0,
+        status: 'uploading',
+        startTime: Date.now()
+      }
+    }));
+  };
+  
+  const updateUploadProgress = (uploadId, progress, status = 'uploading') => {
+    setUploadProgress(prev => ({
+      ...prev,
+      [uploadId]: {
+        ...prev[uploadId],
+        progress: Math.round(progress),
+        status,
+        ...(status === 'completed' && { endTime: Date.now() })
+      }
+    }));
+  };
+  
+  const finishUpload = (uploadId, status = 'completed') => {
+    setActiveUploads(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(uploadId);
+      return newSet;
+    });
+    
+    updateUploadProgress(uploadId, 100, status);
+    
+    // Clear upload progress after delay
+    setTimeout(() => {
+      setUploadProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[uploadId];
+        return newProgress;
+      });
+    }, 3000);
   };
   
   // Gallery and media preview handlers
@@ -1081,6 +1137,10 @@ const CMSApp = () => {
       tempPreview = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YzZjRmNiIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjE4IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iMC4zZW0iPkxvYWRpbmc8L3RleHQ+PC9zdmc+';
     }
 
+    // Create unique upload ID and start progress tracking
+    const uploadId = `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    startUpload(uploadId, file.name, file.size);
+    
     // Show loading state with temporary preview
     const loadingFile = {
       file,
@@ -1090,13 +1150,18 @@ const CMSApp = () => {
       type: file.type,
       uploadedAt: new Date().toISOString(),
       uploading: true,
+      uploadId,
       temporaryPreview: tempPreview && tempPreview.startsWith('blob:') ? tempPreview : null
     };
     updateFileInForm(type, loadingFile);
+    
+    // Show upload started status
+    updateStatus(`📤 Uploading ${file.name} (${Math.round(file.size / 1024 / 1024)}MB)...`, 'info', 0);
 
     try {
       console.log(`🔄 Processing ${type} upload:`, file.name);
       console.log('🔄 Storage method will be:', storageDecision.method);
+      console.log('🔄 Upload ID:', uploadId);
       
       // Generate predictable public_id for tile and background images to enable overwriting
       const getPublicId = () => {
@@ -1133,6 +1198,16 @@ const CMSApp = () => {
       };
       
       console.log(`🚀 Starting ${storageDecision.method} upload via HybridMediaService`);
+      
+      // Progress simulation for better UX
+      const progressInterval = setInterval(() => {
+        const current = uploadProgress[uploadId];
+        if (current && current.progress < 90) {
+          const increment = Math.random() * 15 + 5; // 5-20% increments
+          updateUploadProgress(uploadId, Math.min(current.progress + increment, 90));
+        }
+      }, 500);
+      
       const uploadPromise = HybridMediaService.uploadMedia(file, hybridOptions);
       
       // Add 30 second timeout
@@ -1141,6 +1216,11 @@ const CMSApp = () => {
       );
       
       const result = await Promise.race([uploadPromise, timeoutPromise]);
+      
+      // Clear progress interval and complete upload
+      clearInterval(progressInterval);
+      finishUpload(uploadId, 'completed');
+      
       console.log(`✅ ${storageDecision.method} upload completed:`, result.url || result.localPath);
 
       // Clean up temporary preview blob URL
@@ -1212,15 +1292,31 @@ const CMSApp = () => {
       updateFileInForm(type, finalFileData);
       console.log(`✅ Successfully uploaded ${type}:`, result.url || result.localPath);
       
-      // Show success message
+      // Show success message with upload duration
       const fileTypeDisplay = type.includes('tile') ? 'tile background' : 'page background';
       const storageLocation = result.storageType === 'portfolio' ? 'portfolio repository' : 
                               result.storageType === 'local' ? 'local storage' : 'Cloudinary';
-      setSuccessMessage(`✅ ${fileTypeDisplay} uploaded successfully to ${storageLocation}!`);
-      setTimeout(() => setSuccessMessage(''), 3000);
+      const uploadDuration = uploadProgress[uploadId] ? 
+        Math.round((uploadProgress[uploadId].endTime - uploadProgress[uploadId].startTime) / 1000) : 0;
+      
+      const successMsg = uploadDuration > 0 ? 
+        `✅ ${fileTypeDisplay} uploaded to ${storageLocation} in ${uploadDuration}s!` :
+        `✅ ${fileTypeDisplay} uploaded successfully to ${storageLocation}!`;
+      
+      setSuccessMessage(successMsg);
+      updateStatus(successMsg, 'success', 4000);
+      setTimeout(() => setSuccessMessage(''), 4000);
       
     } catch (error) {
       console.error(`❌ Failed to upload ${type}:`, error);
+      
+      // Clear progress interval and mark upload as failed
+      if (typeof progressInterval !== 'undefined') {
+        clearInterval(progressInterval);
+      }
+      finishUpload(uploadId, 'failed');
+      
+      updateStatus(`❌ Upload failed: ${error.message}`, 'error', 5000);
       
       // Clean up temporary preview on error
       if (tempPreview && tempPreview.startsWith('blob:')) {
@@ -3239,7 +3335,7 @@ const CMSApp = () => {
                 <div className="upload-section">
                   {(!projectForm.tileBackgroundFile || (!projectForm.tileBackgroundFile.url && !projectForm.tileBackgroundFile.preview)) && projectForm.tileBackgroundType === 'image' ? (
                     <div
-                      className={`upload-zone ${dragOverFile === 'tileImage' ? 'drag-over' : ''} ${errors.tileImage ? 'error' : ''}`}
+                      className={`upload-zone ${dragOverFile === 'tileImage' ? 'drag-over' : ''} ${errors.tileImage ? 'error' : ''} ${isUploadActive('tileImage') ? 'uploading' : ''}`}
                       onDragEnter={(e) => handleFileDragEnter(e, 'tileImage')}
                       onDragOver={handleFileDragOver}
                       onDragLeave={handleFileDragLeave}
@@ -3270,7 +3366,7 @@ const CMSApp = () => {
                     </div>
                   ) : (!projectForm.tileBackgroundFile || (!projectForm.tileBackgroundFile.url && !projectForm.tileBackgroundFile.preview)) && projectForm.tileBackgroundType === 'video' ? (
                     <div
-                      className={`upload-zone ${dragOverFile === 'tileVideo' ? 'drag-over' : ''} ${errors.tileVideo ? 'error' : ''}`}
+                      className={`upload-zone ${dragOverFile === 'tileVideo' ? 'drag-over' : ''} ${errors.tileVideo ? 'error' : ''} ${isUploadActive('tileVideo') ? 'uploading' : ''}`}
                       onDragEnter={(e) => handleFileDragEnter(e, 'tileVideo')}
                       onDragOver={handleFileDragOver}
                       onDragLeave={handleFileDragLeave}
@@ -3383,7 +3479,7 @@ const CMSApp = () => {
                 
                 {(!projectForm.pageBackgroundFile || (!projectForm.pageBackgroundFile.url && !projectForm.pageBackgroundFile.preview)) && (
                   <div
-                    className={`upload-zone ${dragOverFile === 'pageBackground' ? 'drag-over' : ''} ${errors.pageBackground ? 'error' : ''}`}
+                    className={`upload-zone ${dragOverFile === 'pageBackground' ? 'drag-over' : ''} ${errors.pageBackground ? 'error' : ''} ${isUploadActive('pageBackground') ? 'uploading' : ''}`}
                     onDragEnter={(e) => handleFileDragEnter(e, 'pageBackground')}
                     onDragOver={handleFileDragOver}
                     onDragLeave={handleFileDragLeave}
@@ -4199,6 +4295,9 @@ const CMSApp = () => {
               className="header-logo"
             />
             <h1>Sales iPad App CMS</h1>
+            <div className="header-version">
+              <span className="version-badge">{getVersionString()}</span>
+            </div>
           </div>
           <div className={`config-status ${isConfigured ? 'configured' : 'not-configured'}`}>
             {isConfigured ? (
@@ -4250,36 +4349,45 @@ const CMSApp = () => {
           </div>
         </div>
       )}
-
-      {/* Main Layout */}
-      <div className="cms-layout">
-        {/* Sidebar Navigation */}
-        <div className="cms-sidebar">
-        <nav className="sidebar-nav">
-          <div className="nav-item" onClick={() => setCurrentView('dashboard')}>
-            <span className={currentView === 'dashboard' ? 'active' : ''}>📊 Dashboard</span>
-          </div>
-          <div className="nav-item" onClick={() => setCurrentView('edit-testimonials')}>
-            <span className={currentView === 'edit-testimonials' ? 'active' : ''}>💬 Testimonials</span>
-          </div>
-          <div className="nav-item" onClick={() => setCurrentView('settings')}>
-            <span className={currentView === 'settings' ? 'active' : ''}>⚙️ Settings</span>
-          </div>
-        </nav>
-        
-        {/* OurSayso Logo - Rotated 90° */}
-        <div className="sidebar-logo">
-          <a href="https://oursayso.com" target="_blank" rel="noopener noreferrer">
-            <img 
-              src="/images/oursayso-logo.svg" 
-              alt="OurSayso" 
-              className="rotated-logo"
-            />
-          </a>
+      
+      {/* Upload Progress Display */}
+      {Object.keys(uploadProgress).length > 0 && (
+        <div className="upload-progress-overlay">
+          {Object.entries(uploadProgress).map(([uploadId, progress]) => (
+            <div key={uploadId} className={`upload-progress-item ${progress.status}`}>
+              <div className="upload-progress-header">
+                <div className="upload-file-info">
+                  <span className="upload-file-name">📤 {progress.fileName}</span>
+                  <span className="upload-file-size">
+                    {Math.round(progress.fileSize / 1024 / 1024 * 100) / 100}MB
+                  </span>
+                </div>
+                <div className="upload-progress-percent">
+                  {progress.progress}%
+                  {progress.status === 'completed' && ' ✅'}
+                  {progress.status === 'failed' && ' ❌'}
+                </div>
+              </div>
+              <div className="progress-bar-container">
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ 
+                      width: `${progress.progress}%`,
+                      backgroundColor: progress.status === 'failed' ? '#ef4444' : 
+                                     progress.status === 'completed' ? '#22c55e' : '#3b82f6'
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
-      <div className="cms-content">
+      {/* Main Layout - Full Width */}
+      <div className="cms-layout">
+        <div className="cms-content-full-width">
         {/* Success Message */}
         {successMessage && (
           <div className="success-banner">

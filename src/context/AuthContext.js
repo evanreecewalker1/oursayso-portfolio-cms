@@ -4,10 +4,7 @@ const AuthContext = createContext();
 
 // Team member credentials
 const TEAM_CREDENTIALS = {
-  admin: { username: 'admin', password: 'admin2024', role: 'admin', name: 'Administrator' },
-  evan: { username: 'evan', password: 'evan2024', role: 'owner', name: 'Evan Walker' },
-  team1: { username: 'team1', password: 'team1pass', role: 'editor', name: 'Team Member 1' },
-  team2: { username: 'team2', password: 'team2pass', role: 'editor', name: 'Team Member 2' }
+  oursayso: { username: 'hello@oursayso.com', password: 'TheKingsEars', role: 'admin', name: 'Oursayso Admin' }
 };
 
 const SESSION_KEY = 'oursayso_cms_session';
