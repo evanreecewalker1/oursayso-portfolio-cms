@@ -78,8 +78,8 @@ const LoginForm = () => {
       <div className="login-card">
         {/* Deployment Test Banner */}
         <div style={{
-          backgroundColor: '#00ff00',
-          color: '#000000',
+          backgroundColor: '#0066ff',
+          color: '#ffffff',
           fontWeight: 'bold',
           textAlign: 'center',
           padding: '15px',
