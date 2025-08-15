@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import './LoginForm.css';
 
 // Version number - update this with each deployment
-const APP_VERSION = 'v1.3.0-auto-lfs';
+const APP_VERSION = 'v1.3.1-lfs-fix';
 
 const LoginForm = () => {
   const { login, isLoading } = useAuth();

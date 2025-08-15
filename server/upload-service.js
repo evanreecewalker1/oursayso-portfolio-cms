@@ -27,18 +27,21 @@ app.use(cors({
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    // Ensure videos directory exists
-    if (!fs.existsSync(VIDEOS_DIR)) {
-      fs.mkdirSync(VIDEOS_DIR, { recursive: true });
+    // Create project-specific directory
+    const projectId = req.body.projectId || 'general';
+    const projectDir = path.join(VIDEOS_DIR, projectId);
+    
+    // Ensure project directory exists
+    if (!fs.existsSync(projectDir)) {
+      fs.mkdirSync(projectDir, { recursive: true });
     }
-    cb(null, VIDEOS_DIR);
+    cb(null, projectDir);
   },
   filename: (req, file, cb) => {
-    // Use the filename from the request or generate one
-    const projectId = req.body.projectId || 'general';
+    // Generate filename without directory path
     const timestamp = Date.now();
     const sanitizedName = file.originalname.toLowerCase().replace(/[^a-z0-9.-]/g, '-');
-    const fileName = `${projectId}-${timestamp}-${sanitizedName}`;
+    const fileName = `${timestamp}-${sanitizedName}`;
     cb(null, fileName);
   }
 });
@@ -88,7 +91,9 @@ app.post('/upload-large-video', upload.single('video'), async (req, res) => {
       
       // Add the video file (Git LFS will handle it automatically)
       console.log('📦 Adding file to Git LFS...');
-      const relativePath = `public/videos/${fileName}`;
+      const projectId = req.body.projectId || 'general';
+      const actualFileName = path.basename(req.file.path);
+      const relativePath = `public/videos/${projectId}/${actualFileName}`;
       execSync(`git add "${relativePath}"`, { stdio: 'pipe' });
       
       // Commit the file
@@ -106,18 +111,19 @@ app.post('/upload-large-video', upload.single('video'), async (req, res) => {
       console.log('✅ Large video uploaded successfully via Git LFS');
       
       // Return success response in same format as other upload methods
+      
       res.json({
         success: true,
-        localPath: `/videos/${fileName}`,
-        githubPath: `public/videos/${fileName}`,
-        fileName: fileName,
+        localPath: `/videos/${projectId}/${actualFileName}`,
+        githubPath: `public/videos/${projectId}/${actualFileName}`,
+        fileName: actualFileName,
         size: fileSize,
         type: req.file.mimetype,
         commitSha: commitSha,
         commitUrl: `https://github.com/evanreecewalker1/oursayso-sales-ipad/commit/${commitSha}`,
         uploadMethod: 'lfs-auto',
         publicId: `portfolio_${Date.now()}`,
-        url: `/videos/${fileName}`,
+        url: `/videos/${projectId}/${actualFileName}`,
         width: null,
         height: null,
         format: path.extname(fileName).substring(1),
@@ -126,7 +132,7 @@ app.post('/upload-large-video', upload.single('video'), async (req, res) => {
         resourceType: 'video',
         storageType: 'portfolio',
         uploadedAt: new Date().toISOString(),
-        preview: `/videos/${fileName}`,
+        preview: `/videos/${projectId}/${actualFileName}`,
         needsServerUpload: false
       });
       
