@@ -1,0 +1,4 @@
+CUSTOM_PREVIEW_DEPLOYMENT_TRIGGER
+Timestamp: 2025-08-15T11:33:00.000Z
+Features: Custom preview image functionality for videos
+Commit: a507800
