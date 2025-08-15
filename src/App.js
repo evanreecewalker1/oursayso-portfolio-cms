@@ -2002,7 +2002,9 @@ const CMSApp = () => {
                 return localPath;
               })(),
               name: file.name,
-              type: file.type
+              type: file.type,
+              // Include custom video preview data for gallery items too
+              customVideoPreview: file.customVideoPreview || null
             })),
             order: item.order || 0
           };
@@ -2076,7 +2078,9 @@ const CMSApp = () => {
             })(),
             name: file.name,
             type: file.type || (item.type === 'video' ? 'video/mp4' : 'application/octet-stream'),
-            storageType: file.storageType
+            storageType: file.storageType,
+            // Include custom video preview data if it exists
+            customVideoPreview: file.customVideoPreview || null
           })),
           order: item.order || 0
         };
@@ -3464,27 +3468,132 @@ const CMSApp = () => {
                                 />
                               ) : file.resourceType === 'video' || item.type === 'video' ? (
                                 <div className="media-video-preview">
-                                  <video 
-                                    src={(() => {
-                                      // For GitHub portfolio videos, use raw URL
-                                      if (file.storageType === 'portfolio' && file.fileName) {
-                                        return `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public/videos/${file.fileName}`;
-                                      }
-                                      return file.url || file.preview;
-                                    })()}
-                                    className="media-video-player"
-                                    controls
-                                    muted
-                                    preload="metadata"
-                                    style={{
-                                      width: '100%',
-                                      height: '80px',
-                                      borderRadius: '4px',
-                                      background: '#000'
-                                    }}
-                                    onLoadedData={() => console.log('✅ Media video preview loaded:', file.name)}
-                                    onError={(e) => console.error('❌ Media video preview error:', file.name, e)}
-                                  />
+                                  {/* Custom Preview Image Display */}
+                                  {file.customVideoPreview ? (
+                                    <div className="custom-video-preview">
+                                      <img 
+                                        src={file.customVideoPreview.url}
+                                        alt="Custom video preview"
+                                        className="custom-preview-image"
+                                        style={{
+                                          width: '100%',
+                                          height: '80px',
+                                          objectFit: 'cover',
+                                          borderRadius: '4px'
+                                        }}
+                                      />
+                                      <div className="preview-overlay">
+                                        <div className="play-icon">▶</div>
+                                        <div className="custom-preview-badge">Custom Preview</div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <video 
+                                      src={(() => {
+                                        // For GitHub portfolio videos, use raw URL
+                                        if (file.storageType === 'portfolio' && file.fileName) {
+                                          return `https://raw.githubusercontent.com/evanreecewalker1/oursayso-sales-ipad/main/public/videos/${file.fileName}`;
+                                        }
+                                        return file.url || file.preview;
+                                      })()}
+                                      className="media-video-player"
+                                      controls
+                                      muted
+                                      preload="metadata"
+                                      style={{
+                                        width: '100%',
+                                        height: '80px',
+                                        borderRadius: '4px',
+                                        background: '#000'
+                                      }}
+                                      onLoadedData={() => console.log('✅ Media video preview loaded:', file.name)}
+                                      onError={(e) => console.error('❌ Media video preview error:', file.name, e)}
+                                    />
+                                  )}
+                                  
+                                  {/* Custom Preview Upload Controls */}
+                                  <div className="video-preview-controls">
+                                    {file.customVideoPreview ? (
+                                      <div className="preview-status">
+                                        <span className="success-indicator">✅ Custom Preview Set</span>
+                                        <button 
+                                          className="btn-link btn-danger"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            // Remove custom preview
+                                            const updatedFiles = item.files.map(f => 
+                                              f === file ? { ...f, customVideoPreview: null } : f
+                                            );
+                                            updateMediaItem(item.id, { files: updatedFiles });
+                                          }}
+                                          title="Remove custom preview"
+                                        >
+                                          Remove Preview
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button 
+                                        className="btn-custom-preview"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const input = document.createElement('input');
+                                          input.type = 'file';
+                                          input.accept = 'image/*';
+                                          input.onchange = async (event) => {
+                                            const previewFile = event.target.files[0];
+                                            if (!previewFile) return;
+
+                                            if (!previewFile.type.startsWith('image/')) {
+                                              alert('Please select a valid image file for the custom preview');
+                                              return;
+                                            }
+
+                                            if (previewFile.size > 10 * 1024 * 1024) {
+                                              alert('Preview image must be smaller than 10MB');
+                                              return;
+                                            }
+
+                                            try {
+                                              console.log('📸 Uploading custom video preview:', previewFile.name);
+                                              
+                                              const result = await HybridMediaService.uploadMedia(previewFile, {
+                                                projectId: projectForm.id,
+                                                mediaItemType: 'image',
+                                                folder: 'portfolio/video-previews'
+                                              });
+
+                                              console.log('✅ Custom preview uploaded:', result);
+
+                                              // Update the file with custom preview data
+                                              const updatedFiles = item.files.map(f => 
+                                                f === file ? { 
+                                                  ...f, 
+                                                  customVideoPreview: {
+                                                    url: result.url,
+                                                    publicId: result.publicId,
+                                                    name: previewFile.name,
+                                                    uploadedAt: new Date().toISOString()
+                                                  }
+                                                } : f
+                                              );
+                                              
+                                              updateMediaItem(item.id, { files: updatedFiles });
+
+                                            } catch (error) {
+                                              console.error('❌ Failed to upload custom preview:', error);
+                                              alert(`Failed to upload custom preview: ${error.message}`);
+                                            }
+                                          };
+                                          input.click();
+                                        }}
+                                        title="Upload custom preview image"
+                                        className="btn-small"
+                                      >
+                                        📸 Add Custom Preview
+                                      </button>
+                                    )}
+                                  </div>
+                                  
                                   <div className="video-upload-success">
                                     <span className="success-indicator">✅ {file.storageType === 'portfolio' ? 'iPad Ready' : 'Uploaded'}</span>
                                   </div>

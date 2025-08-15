@@ -3300,6 +3300,111 @@ body {
   transform: translateY(-1px);
 }
 
+/* Custom Video Preview Styles */
+.custom-video-preview {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.custom-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.play-icon {
+  color: white;
+  font-size: 16px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.custom-preview-badge {
+  background: rgba(0, 200, 0, 0.9);
+  color: white;
+  padding: 2px 6px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  text-shadow: none;
+}
+
+.video-preview-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preview-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.btn-custom-preview {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-custom-preview:hover {
+  background: #059669;
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 11px;
+  text-decoration: underline;
+  padding: 2px 4px;
+  transition: color 0.2s ease;
+}
+
+.btn-link:hover {
+  color: #2563eb;
+}
+
+.btn-danger {
+  color: #ef4444 !important;
+}
+
+.btn-danger:hover {
+  color: #dc2626 !important;
+}
+
+.btn-small {
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
 /* Responsive adjustments for custom preview controls */
 @media (max-width: 768px) {
   .preview-actions {
@@ -3308,5 +3413,15 @@ body {
   
   .btn-preview-action {
     flex: none;
+  }
+
+  .video-preview-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-custom-preview {
+    font-size: 10px;
+    padding: 3px 6px;
   }
 }
