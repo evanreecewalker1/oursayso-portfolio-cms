@@ -3855,6 +3855,7 @@ const CMSApp = () => {
                                           )}
                                         </div>
                                       ) : item.type === 'video' ? (
+                                        console.log('🎥 DEBUG: Rendering video item:', item.id, item.title, item.type),
                                         <div className="video-thumbnail-enhanced">
                                           <video 
                                             src={(() => {
@@ -3889,7 +3890,8 @@ const CMSApp = () => {
                                           </div>
                                           
                                           {/* Custom Preview Controls for Videos */}
-                                          <div className="video-custom-preview-controls">
+                                          <div className="video-custom-preview-controls" style={{backgroundColor: 'yellow', padding: '20px', border: '3px solid red'}}>
+                                            <h3 style={{color: 'black'}}>🎥 CUSTOM PREVIEW CONTROLS DEBUG</h3>
                                             {item.customPreview ? (
                                               <div className="custom-preview-status">
                                                 <div className="preview-badge">
