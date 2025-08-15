@@ -1058,6 +1058,7 @@ const CMSApp = () => {
   };
 
   const handleFileUpload = async (file, type) => {
+    let progressInterval; // Declare at function scope
     if (!file) return;
 
     // Prevent Chrome crashes with immediate safety checks
@@ -4112,7 +4113,7 @@ const CMSApp = () => {
                                                   id: `${item.id}-${idx}`,
                                                   url: file.url || file.preview,
                                                   thumbnail: file.url || file.preview,
-                                                  alt: `${project.title} Gallery ${idx + 1}`,
+                                                  alt: `${editingProject?.title || 'Project'} Gallery ${idx + 1}`,
                                                   title: file.name || `Gallery Image ${idx + 1}`
                                                 }));
                                                 openGallery(galleryImages, index);
