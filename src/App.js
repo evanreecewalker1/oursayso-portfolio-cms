@@ -3799,7 +3799,9 @@ const CMSApp = () => {
                           <div className="page-media">
                             <h5>Media Items</h5>
                             <div className="media-list-enhanced">
-                              {projectForm.mediaItems.map((item) => (
+                              {projectForm.mediaItems.map((item) => {
+                                console.log('🔍 DEBUG: Media item:', item.id, 'Type:', item.type, 'Title:', item.title);
+                                return (
                                 <div key={item.id} className="media-item-preview-enhanced">
                                   {/* Media Type Header */}
                                   <div className="media-header">
@@ -3855,7 +3857,6 @@ const CMSApp = () => {
                                           )}
                                         </div>
                                       ) : item.type === 'video' ? (
-                                        console.log('🎥 DEBUG: Rendering video item:', item.id, item.title, item.type),
                                         <div className="video-thumbnail-enhanced">
                                           <video 
                                             src={(() => {
@@ -3953,7 +3954,8 @@ const CMSApp = () => {
                                     </div>
                                   )}
                                 </div>
-                              ))}
+                              );
+                              })}
                             </div>
                           </div>
                         )}
