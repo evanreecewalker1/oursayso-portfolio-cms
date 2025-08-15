@@ -18,6 +18,9 @@ const VideoMediaUploader = ({
   const [uploadProgress, setUploadProgress] = useState({});
   const [previewVideo, setPreviewVideo] = useState(null);
   const [videoStates, setVideoStates] = useState({});
+  const [overallProgress, setOverallProgress] = useState(0);
+  const [totalSizeUploaded, setTotalSizeUploaded] = useState(0);
+  const [uploadStartTime, setUploadStartTime] = useState(null);
   const fileInputRef = useRef(null);
   const previewVideoRef = useRef(null);
 
@@ -189,7 +192,11 @@ const VideoMediaUploader = ({
     if (uploadQueue.length === 0 || uploading) return;
 
     setUploading(true);
+    setUploadStartTime(Date.now());
+    setOverallProgress(0);
+    setTotalSizeUploaded(0);
     const results = [];
+    const totalSize = uploadQueue.reduce((sum, item) => sum + item.size, 0);
 
     for (const item of uploadQueue) {
       if (item.status !== 'pending') continue;
@@ -212,11 +219,12 @@ const VideoMediaUploader = ({
               [item.id]: progress
             }));
 
-            // Calculate ETA
+            // Calculate ETA and overall progress
             const elapsed = Date.now() - item.uploadStartTime;
             const estimatedTotal = elapsed / (progress / 100);
             const estimatedRemaining = estimatedTotal - elapsed;
-
+            
+            // Update individual item progress
             setUploadQueue(prev => prev.map(qi => 
               qi.id === item.id 
                 ? { 
@@ -226,6 +234,14 @@ const VideoMediaUploader = ({
                   }
                 : qi
             ));
+            
+            // Calculate overall progress
+            const currentFileContribution = (item.size / totalSize) * (progress / 100);
+            setTotalSizeUploaded(prev => {
+              const newTotal = prev + currentFileContribution;
+              setOverallProgress((newTotal / totalSize) * 100);
+              return newTotal;
+            });
 
             // Report progress to parent
             onUploadProgress?.({
@@ -279,10 +295,28 @@ const VideoMediaUploader = ({
 
     setUploading(false);
     
-    // Report completion to parent
+    // Final progress update
+    setOverallProgress(100);
+    
+    // Report completion to parent with summary
     if (results.length > 0) {
-      onUploadComplete?.(results);
+      const uploadSummary = {
+        results,
+        totalFiles: results.length,
+        totalSize: results.reduce((sum, r) => sum + r.originalSize, 0),
+        uploadTime: Date.now() - uploadStartTime,
+        successCount: results.length,
+        failedCount: uploadQueue.filter(q => q.status === 'failed').length
+      };
+      onUploadComplete?.(uploadSummary);
     }
+    
+    // Reset progress tracking
+    setTimeout(() => {
+      setOverallProgress(0);
+      setTotalSizeUploaded(0);
+      setUploadStartTime(null);
+    }, 2000);
   };
 
   // Remove item from queue
@@ -299,6 +333,36 @@ const VideoMediaUploader = ({
     setUploadQueue(prev => prev.filter(item => 
       item.status === 'pending' || item.status === 'uploading'
     ));
+  };
+
+  // Retry failed upload
+  const retryUpload = (itemId) => {
+    setUploadQueue(prev => prev.map(item =>
+      item.id === itemId
+        ? { ...item, status: 'pending', error: null, progress: 0 }
+        : item
+    ));
+    setUploadProgress(prev => {
+      const { [itemId]: removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  // Format file size for display
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Format duration for display
+  const formatDuration = (seconds) => {
+    if (!seconds || isNaN(seconds)) return 'Unknown';
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Video preview controls

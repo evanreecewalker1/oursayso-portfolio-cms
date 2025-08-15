@@ -31,6 +31,13 @@ const CMSApp = () => {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusType, setStatusType] = useState('info'); // 'info', 'success', 'error', 'warning'
   
+  // Gallery and media preview state
+  const [showGallery, setShowGallery] = useState(false);
+  const [showMediaPreview, setShowMediaPreview] = useState(false);
+  const [currentGalleryImages, setCurrentGalleryImages] = useState([]);
+  const [currentMediaItem, setCurrentMediaItem] = useState(null);
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+  
   // Auto-scroll and status management
   const updateStatus = (msg, type = 'info', duration = 3000) => {
     setStatusMessage(msg);
@@ -45,6 +52,36 @@ const CMSApp = () => {
   
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Gallery and media preview handlers
+  const openGallery = (images, startIndex = 0) => {
+    setCurrentGalleryImages(images);
+    setCurrentGalleryIndex(startIndex);
+    setShowGallery(true);
+    updateStatus(`📸 Opening gallery with ${images.length} images`, 'info', 2000);
+  };
+  
+  const openMediaPreview = (mediaItem) => {
+    setCurrentMediaItem(mediaItem);
+    setShowMediaPreview(true);
+    updateStatus(`🎬 Opening ${mediaItem.type} preview`, 'info', 1500);
+  };
+  
+  const closeGallery = () => {
+    setShowGallery(false);
+    setCurrentGalleryImages([]);
+    setCurrentGalleryIndex(0);
+  };
+  
+  const closeMediaPreview = () => {
+    setShowMediaPreview(false);
+    setCurrentMediaItem(null);
+  };
+  
+  const handleGalleryImageChange = (index, image) => {
+    setCurrentGalleryIndex(index);
+    updateStatus(`📸 Image ${index + 1} of ${currentGalleryImages.length}`, 'info', 1000);
   };
   
   // Cache clearing function
@@ -625,6 +662,39 @@ const CMSApp = () => {
 
     return () => clearTimeout(saveTimer);
   }, [projects, page2Projects, testimonials, isLoadingProjects]);
+
+  // Service Worker registration for offline functionality
+  useEffect(() => {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      navigator.serviceWorker.register('/sw-portfolio-offline.js')
+        .then((registration) => {
+          console.log('🚀 Portfolio Service Worker registered successfully:', registration);
+          updateStatus('🚀 Offline functionality enabled', 'success', 3000);
+          
+          // Listen for service worker updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker?.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                updateStatus('📱 App updated - refresh to get the latest version', 'info', 5000);
+              }
+            });
+          });
+        })
+        .catch((error) => {
+          console.error('❌ Portfolio Service Worker registration failed:', error);
+          updateStatus('⚠️ Offline functionality unavailable', 'warning', 3000);
+        });
+      
+      // Listen for service worker messages
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        const { type, message } = event.data || {};
+        if (type === 'SW_ACTIVATED') {
+          updateStatus(message || '📱 Portfolio app ready for offline use', 'success', 4000);
+        }
+      });
+    }
+  }, []);
 
   // Cleanup blob URLs when component unmounts or files change
   useEffect(() => {
@@ -3306,7 +3376,23 @@ const CMSApp = () => {
                       <div className="uploaded-files">
                         <div className="files-grid">
                           {item.files.map((file, fileIndex) => (
-                            <div key={fileIndex} className="file-preview">
+                            <div 
+                              key={fileIndex} 
+                              className="file-preview"
+                              onClick={() => {
+                                if (file.resourceType === 'image' || file.resourceType === 'video' || file.name?.toLowerCase().endsWith('.pdf')) {
+                                  const mediaItem = {
+                                    url: file.url || file.preview,
+                                    name: file.name || `Media ${fileIndex + 1}`,
+                                    type: file.resourceType || (file.name?.toLowerCase().endsWith('.pdf') ? 'pdf' : 'image'),
+                                    size: file.bytes || file.size,
+                                    dimensions: file.width && file.height ? { width: file.width, height: file.height } : null
+                                  };
+                                  openMediaPreview(mediaItem);
+                                }
+                              }}
+                              style={{ cursor: (file.resourceType === 'image' || file.resourceType === 'video' || file.name?.toLowerCase().endsWith('.pdf')) ? 'pointer' : 'default' }}
+                            >
                               {file.resourceType === 'image' || item.type === 'gallery' ? (
                                 <img 
                                   src={file.url || file.preview} 
@@ -3674,7 +3760,21 @@ const CMSApp = () => {
                                       {item.type === 'gallery' ? (
                                         <div className="gallery-thumbnail-grid">
                                           {item.files.slice(0, 4).map((file, index) => (
-                                            <div key={index} className="gallery-thumb">
+                                            <div 
+                                              key={index} 
+                                              className="gallery-thumb"
+                                              onClick={() => {
+                                                const galleryImages = item.files.map((file, idx) => ({
+                                                  id: `${item.id}-${idx}`,
+                                                  url: file.url || file.preview,
+                                                  thumbnail: file.url || file.preview,
+                                                  alt: `${project.title} Gallery ${idx + 1}`,
+                                                  title: file.name || `Gallery Image ${idx + 1}`
+                                                }));
+                                                openGallery(galleryImages, index);
+                                              }}
+                                              style={{ cursor: 'pointer' }}
+                                            >
                                               <img 
                                                 src={file.url || file.preview} 
                                                 alt={`Gallery ${index + 1}`}
@@ -3855,6 +3955,34 @@ const CMSApp = () => {
           </div>
         </div>
       )}
+
+      {/* Main Layout */}
+      <div className="cms-layout">
+        {/* Sidebar Navigation */}
+        <div className="cms-sidebar">
+        <nav className="sidebar-nav">
+          <div className="nav-item" onClick={() => setCurrentView('dashboard')}>
+            <span className={currentView === 'dashboard' ? 'active' : ''}>📊 Dashboard</span>
+          </div>
+          <div className="nav-item" onClick={() => setCurrentView('edit-testimonials')}>
+            <span className={currentView === 'edit-testimonials' ? 'active' : ''}>💬 Testimonials</span>
+          </div>
+          <div className="nav-item" onClick={() => setCurrentView('settings')}>
+            <span className={currentView === 'settings' ? 'active' : ''}>⚙️ Settings</span>
+          </div>
+        </nav>
+        
+        {/* OurSayso Logo - Rotated 90° */}
+        <div className="sidebar-logo">
+          <a href="https://oursayso.com" target="_blank" rel="noopener noreferrer">
+            <img 
+              src="/images/oursayso-logo.svg" 
+              alt="OurSayso" 
+              className="rotated-logo"
+            />
+          </a>
+        </div>
+      </div>
 
       <div className="cms-content">
         {/* Success Message */}
@@ -4706,6 +4834,31 @@ const CMSApp = () => {
           <p>Portfolio settings, categories, and global configuration.</p>
         </div>
       </div>
+      </div> {/* Close cms-layout */}
+      
+      {/* Gallery Modal */}
+      {showGallery && (
+        <PortfolioGallery
+          images={currentGalleryImages}
+          title="Project Gallery"
+          currentIndex={currentGalleryIndex}
+          onClose={closeGallery}
+          onImageChange={handleGalleryImageChange}
+          showThumbnails={true}
+          autoPlay={false}
+        />
+      )}
+      
+      {/* Media Preview Modal */}
+      {showMediaPreview && currentMediaItem && (
+        <MediaPreview
+          mediaItem={currentMediaItem}
+          title="Media Preview"
+          onClose={closeMediaPreview}
+          hasNext={false}
+          hasPrevious={false}
+        />
+      )}
     </div>
   );
 };

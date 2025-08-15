@@ -4,7 +4,7 @@ import CloudinaryService from '../services/cloudinaryConfig';
 import HybridMediaService from '../services/hybridMediaService';
 import './MediaUploader.css';
 
-const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acceptedTypes = "image/*,video/*" }) => {
+const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acceptedTypes = "image/*,video/*,application/pdf" }) => {
   const [uploadQueue, setUploadQueue] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -17,13 +17,14 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
     const validFiles = fileArray.filter(file => {
       const isImage = file.type.startsWith('image/');
       const isVideo = file.type.startsWith('video/');
+      const isPdf = file.type === 'application/pdf';
       const isValidSize = file.size <= 150 * 1024 * 1024; // 150MB limit (increased for large video files)
       
-      return (isImage || isVideo) && isValidSize;
+      return (isImage || isVideo || isPdf) && isValidSize;
     });
 
     if (validFiles.length !== fileArray.length) {
-      alert(`${fileArray.length - validFiles.length} files were rejected. Only images and videos under 150MB are allowed.`);
+      alert(`${fileArray.length - validFiles.length} files were rejected. Only images, videos, and PDFs under 150MB are allowed.`);
     }
 
     if (validFiles.length + uploadQueue.length > maxFiles) {
@@ -94,13 +95,22 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
         ));
 
         // Determine folder based on file type
-        const folder = item.file.type.startsWith('video/') ? 'portfolio/videos' : 'portfolio/images';
+        let folder = 'portfolio/images';
+        let fileTypeTag = 'image';
+        
+        if (item.file.type.startsWith('video/')) {
+          folder = 'portfolio/videos';
+          fileTypeTag = 'video';
+        } else if (item.file.type === 'application/pdf') {
+          folder = 'portfolio/documents';
+          fileTypeTag = 'pdf';
+        }
         
         // Upload using hybrid media service (routes to Cloudinary or local storage)
         console.log('📁 MediaUploader using HybridMediaService for:', item.file.name);
         const result = await HybridMediaService.uploadMedia(item.file, {
           folder,
-          tags: ['portfolio', 'cms-upload', item.file.type.startsWith('video/') ? 'video' : 'image'],
+          tags: ['portfolio', 'cms-upload', fileTypeTag],
           projectId: `media-uploader-${Date.now()}`
         });
 
@@ -181,6 +191,12 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
     
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
+      // Check for PDF files and reject drag & drop
+      const hasPdfs = Array.from(files).some(file => file.type === 'application/pdf');
+      if (hasPdfs) {
+        alert('PDF files cannot be uploaded via drag & drop. Please use the "Choose Files" button to upload PDFs.');
+        return;
+      }
       handleFiles(files);
     }
   }, [handleFiles]);
@@ -196,6 +212,7 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
   const getFileIcon = (type) => {
     if (type.startsWith('image/')) return <Image size={20} />;
     if (type.startsWith('video/')) return <Video size={20} />;
+    if (type === 'application/pdf') return <File size={20} className="pdf-icon" />;
     return <File size={20} />;
   };
 
@@ -256,7 +273,8 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
         
         <Upload size={48} className="upload-icon" />
         <h3>Drop files here or click to upload</h3>
-        <p>Support for images and videos up to 150MB</p>
+        <p>Support for images, videos, and PDFs up to 150MB</p>
+        <p>Note: PDFs must be uploaded using this button (drag & drop disabled for PDFs)</p>
         <p>Maximum {maxFiles} files</p>
       </div>
 
