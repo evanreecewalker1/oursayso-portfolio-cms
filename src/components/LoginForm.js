@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import './LoginForm.css';
 
+// Version number - update this with each deployment
+const APP_VERSION = 'v1.2.0-lfs';
+
 const LoginForm = () => {
   const { login, isLoading } = useAuth();
   const [formData, setFormData] = useState({
@@ -76,20 +79,6 @@ const LoginForm = () => {
       </div>
       
       <div className="login-card">
-        {/* Deployment Test Banner */}
-        <div style={{
-          backgroundColor: '#0066ff',
-          color: '#ffffff',
-          fontWeight: 'bold',
-          textAlign: 'center',
-          padding: '15px',
-          marginBottom: '20px',
-          borderRadius: '5px',
-          fontSize: '16px',
-          border: '2px solid #000000'
-        }}>
-          🚀 DEPLOYMENT TEST - Changes are working! - {new Date().toLocaleString()}
-        </div>
         
         {/* Header with Logo */}
         <div className="login-header">
@@ -177,6 +166,15 @@ const LoginForm = () => {
         <div className="login-footer">
           <p className="login-help">
             Contact your team administrator if you need access
+          </p>
+          <p style={{
+            fontSize: '10px',
+            color: '#c0c0c0',
+            marginTop: '15px',
+            textAlign: 'center',
+            opacity: 0.7
+          }}>
+            {APP_VERSION}
           </p>
         </div>
       </div>
