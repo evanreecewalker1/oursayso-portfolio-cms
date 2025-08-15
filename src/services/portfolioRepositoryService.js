@@ -144,16 +144,23 @@ class PortfolioRepositoryService {
       a.style.display = 'none';
       document.body.appendChild(a);
       
-      console.log('💾 Large video download prepared:', fileName);
-      console.log('📋 MANUAL UPLOAD REQUIRED:');
-      console.log('   1. Download will start automatically');
-      console.log(`   2. Save downloaded file to: ~/Desktop/ipad-portfolio/public/videos/`);
-      console.log('   3. Run these commands:');
-      console.log('      cd ~/Desktop/ipad-portfolio');
-      console.log(`      git add public/videos/${fileName}`);
-      console.log(`      git commit -m "Add large video: ${fileName}"`);
-      console.log('      git push origin main');
-      console.log('   4. Refresh CMS after successful push');
+      console.log('🎬='.repeat(50));
+      console.log('🎬 LARGE VIDEO MANUAL UPLOAD INSTRUCTIONS');
+      console.log('🎬='.repeat(50));
+      console.log(`📁 File: ${fileName}`);
+      console.log('📥 Download will start automatically in 1 second');
+      console.log('');
+      console.log('📋 STEP 1: File will download automatically');
+      console.log(`📋 STEP 2: Move file to ~/Desktop/ipad-portfolio/public/videos/`);
+      console.log('📋 STEP 3: Run these commands in Terminal:');
+      console.log('');
+      console.log('   cd ~/Desktop/ipad-portfolio');
+      console.log(`   git add public/videos/${fileName}`);
+      console.log(`   git commit -m "Add large video: ${fileName}"`);
+      console.log('   git push origin main');
+      console.log('');
+      console.log('📋 STEP 4: Refresh CMS after successful push');
+      console.log('🎬='.repeat(50));
       
       // Auto-trigger download
       setTimeout(() => {
@@ -161,9 +168,11 @@ class PortfolioRepositoryService {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        // Show user notification
-        if (window.alert) {
-          alert(`Large video "${fileName}" downloaded. Please follow console instructions to complete Git LFS upload manually.`);
+        // Show user notification with detailed instructions
+        if (window.confirm) {
+          const message = `🎬 LARGE VIDEO DOWNLOAD COMPLETE!\n\nFile: ${fileName}\n\n📋 NEXT STEPS:\n1. File saved to Downloads\n2. Move it to: ~/Desktop/ipad-portfolio/public/videos/\n3. Run in Terminal:\n   cd ~/Desktop/ipad-portfolio\n   git add public/videos/${fileName}\n   git commit -m "Add large video: ${fileName}"\n   git push origin main\n4. Refresh CMS\n\nClick OK to continue, or check console for detailed instructions.`;
+          
+          window.alert(message);
         }
       }, 1000);
       
