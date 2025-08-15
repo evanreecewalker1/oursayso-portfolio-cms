@@ -1398,6 +1398,69 @@ const CMSApp = () => {
     }
   };
 
+  // Handle custom preview image upload for videos
+  const handleCustomPreviewUpload = async (mediaItemId, file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please select a valid image file for the custom preview');
+      return;
+    }
+
+    // Validate image file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Preview image must be smaller than 10MB');
+      return;
+    }
+
+    try {
+      updateStatus(`📤 Uploading custom preview...`, 'info', 0);
+
+      // Upload the image using HybridMediaService
+      const result = await HybridMediaService.uploadMedia(file, {
+        projectId: `custom-preview-${mediaItemId}`,
+        mediaItemType: 'image',
+        folder: 'portfolio/video-previews'
+      });
+
+      // Update the media item with custom preview data
+      updateMediaItem(mediaItemId, {
+        customPreview: {
+          url: result.url,
+          publicId: result.publicId,
+          name: file.name,
+          uploadedAt: new Date().toISOString()
+        }
+      });
+
+      updateStatus(`✅ Custom preview uploaded successfully`, 'success', 3000);
+      console.log(`✅ Custom preview uploaded for media item ${mediaItemId}:`, result);
+
+    } catch (error) {
+      console.error(`❌ Failed to upload custom preview for ${mediaItemId}:`, error);
+      updateStatus(`❌ Failed to upload custom preview: ${error.message}`, 'error', 5000);
+    }
+  };
+
+  // Remove custom preview from video media item
+  const removeCustomPreview = (mediaItemId) => {
+    updateMediaItem(mediaItemId, {
+      customPreview: null
+    });
+    updateStatus(`🗑️ Custom preview removed`, 'info', 2000);
+  };
+
+  // Trigger custom preview file picker
+  const triggerCustomPreviewUpload = (mediaItemId) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handleCustomPreviewUpload(mediaItemId, e.target.files[0]);
+      }
+    };
+    input.click();
+  };
+
   // Auto-group gallery images by filename patterns
   const autoGroupGalleryImages = (uploadedFile, projectId) => {
     const fileName = uploadedFile.name.toLowerCase();
@@ -3823,6 +3886,53 @@ const CMSApp = () => {
                                                 '☁️ Cloudinary'
                                               }
                                             </div>
+                                          </div>
+                                          
+                                          {/* Custom Preview Controls for Videos */}
+                                          <div className="video-custom-preview-controls">
+                                            {item.customPreview ? (
+                                              <div className="custom-preview-status">
+                                                <div className="preview-badge">
+                                                  📷 Custom Preview Set
+                                                </div>
+                                                <div className="preview-actions">
+                                                  <button 
+                                                    className="btn-preview-action btn-view"
+                                                    onClick={() => {
+                                                      const img = new Image();
+                                                      img.src = item.customPreview.url;
+                                                      const newWindow = window.open('', '_blank');
+                                                      newWindow.document.write(`<img src="${item.customPreview.url}" alt="Custom Preview" style="max-width:100%; max-height:100vh;"/>`);
+                                                    }}
+                                                    title="View custom preview"
+                                                  >
+                                                    👁️ View
+                                                  </button>
+                                                  <button 
+                                                    className="btn-preview-action btn-replace"
+                                                    onClick={() => triggerCustomPreviewUpload(item.id)}
+                                                    title="Replace custom preview"
+                                                  >
+                                                    🔄 Replace
+                                                  </button>
+                                                  <button 
+                                                    className="btn-preview-action btn-remove"
+                                                    onClick={() => removeCustomPreview(item.id)}
+                                                    title="Remove custom preview"
+                                                  >
+                                                    🗑️ Remove
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            ) : (
+                                              <button 
+                                                className="btn-add-custom-preview"
+                                                onClick={() => triggerCustomPreviewUpload(item.id)}
+                                                title="Add custom preview image for this video"
+                                              >
+                                                📷 Add Custom Preview
+                                              </button>
+                                            )}
                                           </div>
                                         </div>
                                       ) : (

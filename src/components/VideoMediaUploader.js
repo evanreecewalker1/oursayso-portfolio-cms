@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Upload, Video, AlertCircle, CheckCircle, X, Pause, Play, Volume2, VolumeX } from 'lucide-react';
+import { Upload, Video, AlertCircle, CheckCircle, X, Pause, Play, Volume2, VolumeX, FileImage, Camera } from 'lucide-react';
 import HybridMediaService from '../services/hybridMediaService';
 import './VideoMediaUploader.css';
 
@@ -10,7 +10,8 @@ const VideoMediaUploader = ({
   projectId,
   maxSize = 500 * 1024 * 1024, // 500MB default
   acceptedFormats = ['mp4', 'mov', 'webm', 'avi', 'm4v'],
-  allowMultiple = false
+  allowMultiple = false,
+  onCustomPreviewUpload // New prop for custom preview functionality
 }) => {
   const [uploadQueue, setUploadQueue] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -21,8 +22,11 @@ const VideoMediaUploader = ({
   const [overallProgress, setOverallProgress] = useState(0);
   const [totalSizeUploaded, setTotalSizeUploaded] = useState(0);
   const [uploadStartTime, setUploadStartTime] = useState(null);
+  const [customPreviews, setCustomPreviews] = useState({}); // Store custom preview images for each video
+  const [uploadingPreviews, setUploadingPreviews] = useState({}); // Track preview upload status
   const fileInputRef = useRef(null);
   const previewVideoRef = useRef(null);
+  const customPreviewRefs = useRef({}); // Refs for custom preview file inputs
 
   // Enhanced file validation for videos
   const validateVideoFile = (file) => {
@@ -253,13 +257,14 @@ const VideoMediaUploader = ({
           }
         });
 
-        // Enhanced result with metadata
+        // Enhanced result with metadata and custom preview
         const enhancedResult = {
           ...result,
           originalMetadata: item.metadata,
           uploadedAt: new Date().toISOString(),
           fileName: item.file.name,
-          originalSize: item.file.size
+          originalSize: item.file.size,
+          customPreview: customPreviews[item.id] || null // Include custom preview if available
         };
 
         results.push(enhancedResult);
@@ -424,6 +429,78 @@ const VideoMediaUploader = ({
     return `${minutes}m remaining`;
   };
 
+  // Handle custom preview image upload
+  const handleCustomPreviewUpload = async (videoId, file) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Please select a valid image file for the custom preview');
+      return;
+    }
+
+    // Validate image file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Preview image must be smaller than 10MB');
+      return;
+    }
+
+    try {
+      setUploadingPreviews(prev => ({ ...prev, [videoId]: true }));
+
+      // Upload the image using HybridMediaService
+      const result = await HybridMediaService.uploadMedia(file, {
+        projectId: `custom-preview-${videoId}`,
+        mediaItemType: 'image',
+        folder: 'portfolio/video-previews'
+      });
+
+      // Store the custom preview result
+      setCustomPreviews(prev => ({
+        ...prev,
+        [videoId]: {
+          url: result.url,
+          publicId: result.publicId,
+          name: file.name,
+          uploadedAt: new Date().toISOString()
+        }
+      }));
+
+      // Notify parent component if callback provided
+      if (onCustomPreviewUpload) {
+        onCustomPreviewUpload(videoId, result);
+      }
+
+      console.log(`✅ Custom preview uploaded for video ${videoId}:`, result);
+
+    } catch (error) {
+      console.error(`❌ Failed to upload custom preview for ${videoId}:`, error);
+      alert(`Failed to upload custom preview: ${error.message}`);
+    } finally {
+      setUploadingPreviews(prev => ({ ...prev, [videoId]: false }));
+    }
+  };
+
+  // Remove custom preview
+  const removeCustomPreview = (videoId) => {
+    setCustomPreviews(prev => {
+      const { [videoId]: removed, ...rest } = prev;
+      return rest;
+    });
+  };
+
+  // Trigger custom preview file picker
+  const triggerCustomPreviewUpload = (videoId) => {
+    if (!customPreviewRefs.current[videoId]) {
+      customPreviewRefs.current[videoId] = document.createElement('input');
+      customPreviewRefs.current[videoId].type = 'file';
+      customPreviewRefs.current[videoId].accept = 'image/*';
+      customPreviewRefs.current[videoId].onchange = (e) => {
+        if (e.target.files && e.target.files[0]) {
+          handleCustomPreviewUpload(videoId, e.target.files[0]);
+        }
+      };
+    }
+    customPreviewRefs.current[videoId].click();
+  };
+
   // Drag and drop handlers
   const handleDragEnter = (e) => {
     e.preventDefault();
@@ -515,7 +592,22 @@ const VideoMediaUploader = ({
             {uploadQueue.map(item => (
               <div key={item.id} className={`queue-item ${item.status}`}>
                 <div className="item-preview">
-                  {item.preview ? (
+                  {customPreviews[item.id] ? (
+                    <div className="video-thumbnail-container custom-preview">
+                      <img 
+                        src={customPreviews[item.id].url}
+                        alt={`Custom preview of ${item.name}`}
+                        className="video-thumbnail"
+                        onClick={() => toggleVideoPreview(URL.createObjectURL(item.file))}
+                      />
+                      <div className="custom-preview-badge">
+                        <Camera size={14} />
+                      </div>
+                      <div className="play-overlay">
+                        <Play size={24} />
+                      </div>
+                    </div>
+                  ) : item.preview ? (
                     <div className="video-thumbnail-container">
                       <img 
                         src={item.preview}
@@ -553,6 +645,42 @@ const VideoMediaUploader = ({
                     )}
                     {item.metadata.width && item.metadata.height && (
                       <span className="dimensions">{item.metadata.width}×{item.metadata.height}</span>
+                    )}
+                  </div>
+
+                  {/* Custom Preview Controls */}
+                  <div className="custom-preview-controls">
+                    {customPreviews[item.id] ? (
+                      <div className="preview-status">
+                        <Camera size={14} />
+                        <span>Custom preview set</span>
+                        <button 
+                          className="btn-link btn-danger"
+                          onClick={() => removeCustomPreview(item.id)}
+                          title="Remove custom preview"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        className="btn-custom-preview"
+                        onClick={() => triggerCustomPreviewUpload(item.id)}
+                        disabled={item.status === 'uploading' || uploadingPreviews[item.id]}
+                        title="Upload custom preview image"
+                      >
+                        {uploadingPreviews[item.id] ? (
+                          <>
+                            <div className="spinner-small"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <FileImage size={14} />
+                            Add Custom Preview
+                          </>
+                        )}
+                      </button>
                     )}
                   </div>
 
