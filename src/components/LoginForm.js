@@ -76,6 +76,21 @@ const LoginForm = () => {
       </div>
       
       <div className="login-card">
+        {/* Deployment Test Banner */}
+        <div style={{
+          backgroundColor: '#00ff00',
+          color: '#000000',
+          fontWeight: 'bold',
+          textAlign: 'center',
+          padding: '15px',
+          marginBottom: '20px',
+          borderRadius: '5px',
+          fontSize: '16px',
+          border: '2px solid #000000'
+        }}>
+          🚀 DEPLOYMENT TEST - Changes are working! - {new Date().toLocaleString()}
+        </div>
+        
         {/* Header with Logo */}
         <div className="login-header">
           <div className="login-logo">
