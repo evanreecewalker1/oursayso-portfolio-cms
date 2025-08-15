@@ -24,9 +24,31 @@ class HybridMediaService {
     const extension = file.name.split('.').pop().toLowerCase();
     const fileSize = file.size;
 
+    console.log(`🔍 DEBUG getStorageMethod:`, {
+      fileName: file.name,
+      extension: extension,
+      fileSize: fileSize,
+      fileSizeMB: (fileSize / 1024 / 1024).toFixed(2) + 'MB',
+      isVideoType: this.videoTypes.includes(extension),
+      videoCloudinaryThreshold: this.videoCloudinaryThreshold,
+      videoCloudinaryMaxSize: this.videoCloudinaryMaxSize,
+      thresholdMB: (this.videoCloudinaryThreshold / 1024 / 1024).toFixed(2) + 'MB',
+      maxSizeMB: (this.videoCloudinaryMaxSize / 1024 / 1024).toFixed(2) + 'MB'
+    });
+
     // Video files - check size thresholds
     if (this.videoTypes.includes(extension)) {
+      console.log(`🎬 Video detected - checking size thresholds:`, {
+        fileSize: fileSize,
+        fileSizeMB: (fileSize / 1024 / 1024).toFixed(2) + 'MB',
+        videoCloudinaryMaxSize: this.videoCloudinaryMaxSize,
+        videoCloudinaryThreshold: this.videoCloudinaryThreshold,
+        exceedsMaxSize: fileSize > this.videoCloudinaryMaxSize,
+        meetsCloudinaryThreshold: fileSize >= this.videoCloudinaryThreshold
+      });
+
       if (fileSize > this.videoCloudinaryMaxSize) {
+        console.log(`❌ Video too large for any upload method`);
         return {
           method: 'error',
           type: 'video',
@@ -35,6 +57,7 @@ class HybridMediaService {
       }
       
       if (fileSize >= this.videoCloudinaryThreshold) {
+        console.log(`☁️ Video meets Cloudinary threshold - routing to Cloudinary`);
         return {
           method: 'cloudinary',
           type: 'video',
@@ -42,6 +65,7 @@ class HybridMediaService {
         };
       }
       
+      console.log(`📁 Video below threshold - routing to GitHub repository`);
       return {
         method: 'local',
         type: 'video',

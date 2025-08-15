@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import './LoginForm.css';
 
 // Version number - update this with each deployment
-const APP_VERSION = 'v1.4.1-video-upload-fixes';
+const APP_VERSION = 'v1.4.2-debug-video-routing';
 
 const LoginForm = () => {
   const { login, isLoading } = useAuth();
