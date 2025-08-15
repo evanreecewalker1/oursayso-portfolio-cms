@@ -3831,7 +3831,7 @@ const CMSApp = () => {
                                                   id: `${item.id}-${idx}`,
                                                   url: file.url || file.preview,
                                                   thumbnail: file.url || file.preview,
-                                                  alt: `${project.title} Gallery ${idx + 1}`,
+                                                  alt: `${selectedProject.title} Gallery ${idx + 1}`,
                                                   title: file.name || `Gallery Image ${idx + 1}`
                                                 }));
                                                 openGallery(galleryImages, index);
