@@ -17,8 +17,8 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
-    "build:production": "react-scripts build",
+    "build": "REACT_APP_BUILD_TIMESTAMP=$(date -u +\"%Y-%m-%dT%H:%M:%S.%3NZ\") REACT_APP_BUILD_NUMBER=$(date +%s) react-scripts build",
+    "build:production": "REACT_APP_BUILD_TIMESTAMP=$(date -u +\"%Y-%m-%dT%H:%M:%S.%3NZ\") REACT_APP_BUILD_NUMBER=$(date +%s) react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "npm run build"
