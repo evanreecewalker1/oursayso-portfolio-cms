@@ -112,21 +112,18 @@ body {
 .cms-header {
   background: white;
   border-bottom: 1px solid #e2e8f0;
-  padding: 1rem 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 12px 24px;
 }
 
 .cms-header-content {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 0 2rem;
+  width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .cms-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   color: #1e293b;
   margin: 0;
@@ -135,7 +132,7 @@ body {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 8px;
 }
 
 .logo-section {
@@ -145,44 +142,37 @@ body {
 }
 
 .header-logo {
-  height: 32px;
+  height: 24px;
   width: auto;
 }
 
-.header-version {
-  margin-left: 16px;
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
 }
 
 .version-badge {
-  background: #f1f5f9;
+  background: #f8fafc;
   color: #64748b;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
   font-weight: 500;
-  border: 1px solid #e2e8f0;
 }
 
-.config-status {
-  font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 6px;
+.deploy-status {
+  font-size: 0.7rem;
   font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
 }
 
-.config-status.configured {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+.deploy-status.deployed {
+  color: #059669;
 }
 
-.config-status.not-configured {
-  background: #fffbeb;
-  color: #92400e;
-  border: 1px solid #fed7aa;
+.deploy-status.not-deployed {
+  color: #d97706;
 }
 
 .header-actions {
@@ -192,69 +182,58 @@ body {
 }
 
 .header-actions .btn {
-  padding: 8px 12px;
+  padding: 6px 12px;
   font-size: 0.875rem;
   font-weight: 500;
   border-radius: 6px;
-  transition: all 0.2s ease;
   border: 1px solid transparent;
   cursor: pointer;
+  height: 32px;
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.header-actions .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.header-actions .btn-outline {
-  background: white;
+.header-actions .btn-ghost {
+  background: transparent;
   color: #64748b;
-  border-color: #e2e8f0;
+  border: 1px solid #e2e8f0;
 }
 
-.header-actions .btn-outline:hover {
+.header-actions .btn-ghost:hover {
   background: #f8fafc;
   color: #1e293b;
-  border-color: #cbd5e1;
 }
 
-.header-actions .btn-secondary {
+.header-actions .btn-primary {
   background: #1652FB;
   color: white;
+  border: 1px solid #1652FB;
 }
 
-.header-actions .btn-secondary:hover {
+.header-actions .btn-primary:hover {
   background: #0f46d8;
+  border-color: #0f46d8;
 }
 
-.header-actions .btn-success {
-  background: #10b981;
-  color: white;
+.header-actions .btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.header-actions .btn-success:hover {
-  background: #059669;
+.header-actions .btn-icon {
+  background: transparent;
+  color: #64748b;
+  border: none;
+  padding: 6px;
+  width: 32px;
+  min-width: 32px;
 }
 
-.header-actions .btn-warning {
-  background: #f59e0b;
-  color: white;
-}
-
-.header-actions .btn-warning:hover {
-  background: #d97706;
-}
-
-.header-actions .btn-logout {
-  background: #ef4444;
-  color: white;
-}
-
-.header-actions .btn-logout:hover {
-  background: #dc2626;
+.header-actions .btn-icon:hover {
+  background: #f8fafc;
+  color: #1e293b;
 }
 
 .user-info {

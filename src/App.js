@@ -4311,49 +4311,36 @@ const CMSApp = () => {
                 alt="OurSayso"
                 className="header-logo"
               />
-              <h1>Sales iPad App CMS</h1>
-              <div className="header-version">
+              <h1>oursayso® Sales iPad App CMS</h1>
+              <div className="header-status">
                 <span className="version-badge">{getVersionString()}</span>
+                <span className={`deploy-status ${isConfigured ? 'deployed' : 'not-deployed'}`}>
+                  {isConfigured ? '✓ deployed' : '⚠ configure'}
+                </span>
               </div>
-            </div>
-            <div className={`config-status ${isConfigured ? 'configured' : 'not-configured'}`}>
-              {isConfigured ? (
-                <span className="status-indicator">✅ Deployment Ready</span>
-              ) : (
-                <span className="status-indicator">⚠️ Configure Deployment</span>
-              )}
             </div>
           </div>
           <div className="header-actions">
           <button 
-            className="btn btn-outline"
-            onClick={clearAppCache}
-            title="Clear all app cache and data"
-          >
-            🗑️ Clear Cache
-          </button>
-          <button 
-            className="btn btn-secondary"
+            className="btn btn-ghost"
             onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
           >
-            <Eye size={18} />
-            View Dashboard
+            view
           </button>
           <button 
-            className={`btn ${isConfigured ? 'btn-success' : 'btn-warning'}`}
+            className="btn btn-primary"
             onClick={isConfigured ? handlePublishToNetlify : openSettingsModal}
             disabled={publishProgress.isPublishing}
             title={isConfigured ? 'Publish to Netlify' : 'Configure deployment settings first'}
           >
-            <Upload size={18} />
-            {publishProgress.isPublishing ? 'Publishing...' : 'Publish'}
+            {publishProgress.isPublishing ? 'publishing...' : 'publish'}
           </button>
           <button 
-            className="btn btn-logout"
+            className="btn btn-icon"
             onClick={logout}
             title="Logout"
           >
-            ↪️ Logout
+            ↪
           </button>
           </div>
         </div>
