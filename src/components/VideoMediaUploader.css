@@ -29,6 +29,21 @@
   transform: scale(1.02);
 }
 
+.video-upload-zone.no-drag-drop {
+  border: 2px solid #e5e7eb;
+  border-style: solid;
+  background: linear-gradient(135deg, #fafbfc, #f1f5f9);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.video-upload-zone.no-drag-drop:hover {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #f8fafc, #e7f3ff);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15);
+}
+
 .video-upload-zone svg {
   color: #64748b;
   margin-bottom: 1rem;

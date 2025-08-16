@@ -3690,7 +3690,7 @@ const CMSApp = () => {
                                       <div className="preview-status">
                                         <span className="success-indicator">✅ Custom Preview Set</span>
                                         <button 
-                                          className="btn-link btn-danger"
+                                          className="video-remove-preview-btn"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             // Remove custom preview
@@ -3701,6 +3701,12 @@ const CMSApp = () => {
                                           }}
                                           title="Remove custom preview"
                                         >
+                                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <polyline points="3,6 5,6 21,6"></polyline>
+                                            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                          </svg>
                                           Remove Preview
                                         </button>
                                       </div>
@@ -3806,6 +3812,7 @@ const CMSApp = () => {
                             </div>
                           ))}
                         </div>
+                        {item.type !== 'video' && (
                         <button 
                           className="add-more-files-btn"
                           onClick={() => {
@@ -3847,9 +3854,10 @@ const CMSApp = () => {
                         >
                           <Plus size={16} /> Add {item.type === 'gallery' ? 'More Images' : 'File'}
                         </button>
+                        )}
                       </div>
                     ) : (
-                      <div className="upload-zone small"
+                      <div className={`upload-zone small ${item.type === 'video' ? 'no-drag video-single' : ''}`}
                         onClick={() => {
                           const input = document.createElement('input');
                           input.type = 'file';
@@ -3917,17 +3925,30 @@ const CMSApp = () => {
                         }}
                         style={{ cursor: 'pointer' }}
                       >
-                        <File size={32} />
-                        <p>Upload {item.type === 'gallery' ? 'images' : 'files'} for this {item.type}</p>
-                        {item.type === 'gallery' && (
+                        {item.type === 'video' ? (
                           <>
-                            <small>📸 Upload multiple images at once</small>
-                            <small>Recommended: 1920x1080px or larger</small>
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="currentColor" className="upload-icon">
+                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+                              <path d="M14 2v6h6M16 13l-4-2-4 2v4l4-2 4 2z"/>
+                            </svg>
+                            <h4>Upload Video</h4>
+                            <p>Click to select a single video file</p>
+                            <small>Recommended: MP4, under 50MB</small>
+                          </>
+                        ) : (
+                          <>
+                            <File size={32} />
+                            <p>Upload {item.type === 'gallery' ? 'images' : 'files'} for this {item.type}</p>
+                            {item.type === 'gallery' && (
+                              <>
+                                <small>📸 Upload multiple images at once</small>
+                                <small>Recommended: 1920x1080px or larger</small>
+                              </>
+                            )}
+                            {item.type === 'pdf' && <small>PDF documents up to 10MB</small>}
+                            <small>Click to {item.type === 'gallery' ? 'select images' : 'add files'}</small>
                           </>
                         )}
-                        {item.type === 'video' && <small>Recommended: MP4, under 50MB</small>}
-                        {item.type === 'pdf' && <small>PDF documents up to 10MB</small>}
-                        <small>Click to {item.type === 'gallery' ? 'select images' : 'add files'}</small>
                       </div>
                     )}
                   </div>

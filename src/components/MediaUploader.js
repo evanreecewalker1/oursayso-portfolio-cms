@@ -255,11 +255,7 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
 
       {/* Upload Area */}
       <div 
-        className={`upload-area ${dragActive ? 'drag-active' : ''}`}
-        onDragEnter={handleDragEnter}
-        onDragLeave={handleDragLeave}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
+        className="upload-area no-drag-drop"
         onClick={() => fileInputRef.current?.click()}
       >
         <input
@@ -272,9 +268,8 @@ const MediaUploader = ({ onUploadComplete, onUploadProgress, maxFiles = 10, acce
         />
         
         <Upload size={48} className="upload-icon" />
-        <h3>Drop files here or click to upload</h3>
+        <h3>Click to upload files</h3>
         <p>Support for images, videos, and PDFs up to 150MB</p>
-        <p>Note: PDFs must be uploaded using this button (drag & drop disabled for PDFs)</p>
         <p>Maximum {maxFiles} files</p>
       </div>
 

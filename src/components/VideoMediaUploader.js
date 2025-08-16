@@ -542,16 +542,12 @@ const VideoMediaUploader = ({
       {/* Upload Zone */}
       {uploadQueue.length === 0 ? (
         <div 
-          className={`video-upload-zone ${dragActive ? 'drag-active' : ''}`}
-          onDragEnter={handleDragEnter}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
+          className="video-upload-zone no-drag-drop"
           onClick={() => fileInputRef.current?.click()}
         >
           <Video size={48} />
           <h3>Upload Video Files</h3>
-          <p>Drop video files here or click to browse</p>
+          <p>Click to select video files</p>
           <div className="upload-specs">
             <span>Accepted: {acceptedFormats.join(', ').toUpperCase()}</span>
             <span>Max size: {Math.round(maxSize / (1024 * 1024))}MB</span>
