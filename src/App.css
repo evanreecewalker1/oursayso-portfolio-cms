@@ -110,33 +110,14 @@ body {
 
 /* Header */
 .cms-header {
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  background: white;
   border-bottom: 1px solid #e2e8f0;
-  padding: 1.5rem 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  backdrop-filter: blur(8px);
-  position: relative;
-  overflow: hidden;
-}
-
-.cms-header::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #1652FB 0%, #0ea5e9 50%, #1652FB 100%);
-  animation: shimmer 3s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%, 100% { opacity: 0.8; }
-  50% { opacity: 1; }
+  padding: 1rem 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .cms-header-content {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
   padding: 0 2rem;
   display: flex;
@@ -145,177 +126,135 @@ body {
 }
 
 .cms-header h1 {
-  font-size: 1.75rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 600;
   color: #1e293b;
   margin: 0;
-  background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 16px;
-  position: relative;
+  gap: 12px;
 }
 
 .header-logo {
-  height: 48px;
+  height: 32px;
   width: auto;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-  transition: all 0.3s ease;
-  animation: logoFloat 6s ease-in-out infinite;
-}
-
-@keyframes logoFloat {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-3px); }
-}
-
-.header-logo:hover {
-  filter: drop-shadow(0 4px 8px rgba(22, 82, 251, 0.2));
-  transform: scale(1.05);
 }
 
 .header-version {
-  display: flex;
-  align-items: center;
   margin-left: 16px;
 }
 
 .version-badge {
-  background: linear-gradient(135deg, rgba(22, 82, 251, 0.1) 0%, rgba(14, 165, 233, 0.1) 100%);
-  color: #1652FB;
-  padding: 6px 12px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border: 1px solid rgba(22, 82, 251, 0.2);
-  box-shadow: 0 2px 4px rgba(22, 82, 251, 0.1);
-  transition: all 0.2s ease;
-  letter-spacing: 0.5px;
-}
-
-.version-badge:hover {
-  background: linear-gradient(135deg, rgba(22, 82, 251, 0.15) 0%, rgba(14, 165, 233, 0.15) 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(22, 82, 251, 0.15);
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #e2e8f0;
 }
 
 .config-status {
-  font-size: 0.85rem;
-  padding: 8px 14px;
-  border-radius: 12px;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
-  font-weight: 500;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
   display: flex;
   align-items: center;
   gap: 0.25rem;
 }
 
 .config-status.configured {
-  background-color: #dcfce7;
+  background: #f0fdf4;
   color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .config-status.not-configured {
-  background-color: #fef3c7;
+  background: #fffbeb;
   color: #92400e;
+  border: 1px solid #fed7aa;
 }
 
 .header-actions {
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
 .header-actions .btn {
-  padding: 10px 16px;
-  font-size: 0.9rem;
+  padding: 8px 12px;
+  font-size: 0.875rem;
   font-weight: 500;
-  border-radius: 12px;
-  transition: all 0.3s ease;
-  border: none;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 40px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  gap: 6px;
 }
 
 .header-actions .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-actions .btn-outline {
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  background: white;
   color: #64748b;
-  border: 1px solid #e2e8f0;
+  border-color: #e2e8f0;
 }
 
 .header-actions .btn-outline:hover {
-  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+  background: #f8fafc;
   color: #1e293b;
   border-color: #cbd5e1;
 }
 
 .header-actions .btn-secondary {
-  background: linear-gradient(135deg, #1652FB 0%, #0ea5e9 100%);
+  background: #1652FB;
   color: white;
-  border: 1px solid rgba(22, 82, 251, 0.2);
 }
 
 .header-actions .btn-secondary:hover {
-  background: linear-gradient(135deg, #0f46d8 0%, #0284c7 100%);
-  box-shadow: 0 4px 16px rgba(22, 82, 251, 0.3);
+  background: #0f46d8;
 }
 
 .header-actions .btn-success {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: #10b981;
   color: white;
-  border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
 .header-actions .btn-success:hover {
-  background: linear-gradient(135deg, #059669 0%, #047857 100%);
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+  background: #059669;
 }
 
 .header-actions .btn-warning {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  background: #f59e0b;
   color: white;
-  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 .header-actions .btn-warning:hover {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+  background: #d97706;
 }
 
 .header-actions .btn-logout {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: #ef4444;
   color: white;
-  border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .header-actions .btn-logout:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.3);
+  background: #dc2626;
 }
 
 .user-info {
