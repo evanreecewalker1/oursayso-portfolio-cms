@@ -4303,27 +4303,28 @@ const CMSApp = () => {
       
       {/* Header */}
       <div className="cms-header">
-        <div className="header-left">
-          <div className="logo-section">
-            <img 
-              src="/images/oursayso-logo.svg" 
-              alt="OurSayso"
-              className="header-logo"
-            />
-            <h1>Sales iPad App CMS</h1>
-            <div className="header-version">
-              <span className="version-badge">{getVersionString()}</span>
+        <div className="cms-header-content">
+          <div className="header-left">
+            <div className="logo-section">
+              <img 
+                src="/images/oursayso-logo.svg" 
+                alt="OurSayso"
+                className="header-logo"
+              />
+              <h1>Sales iPad App CMS</h1>
+              <div className="header-version">
+                <span className="version-badge">{getVersionString()}</span>
+              </div>
+            </div>
+            <div className={`config-status ${isConfigured ? 'configured' : 'not-configured'}`}>
+              {isConfigured ? (
+                <span className="status-indicator">✅ Deployment Ready</span>
+              ) : (
+                <span className="status-indicator">⚠️ Configure Deployment</span>
+              )}
             </div>
           </div>
-          <div className={`config-status ${isConfigured ? 'configured' : 'not-configured'}`}>
-            {isConfigured ? (
-              <span className="status-indicator">✅ Deployment Ready</span>
-            ) : (
-              <span className="status-indicator">⚠️ Configure Deployment</span>
-            )}
-          </div>
-        </div>
-        <div className="header-actions">
+          <div className="header-actions">
           <button 
             className="btn btn-outline"
             onClick={clearAppCache}
@@ -4354,6 +4355,7 @@ const CMSApp = () => {
           >
             ↪️ Logout
           </button>
+          </div>
         </div>
       </div>
 
