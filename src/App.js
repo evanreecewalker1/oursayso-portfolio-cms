@@ -15,14 +15,6 @@ import { getVersionString, getBuildString } from './utils/version';
 
 // Main CMS Component (authenticated)
 const CMSApp = () => {
-  const buildTimestamp = new Date().toISOString();
-  console.log('🚀 ===== NETLIFY FORCE REBUILD ===== 🚀');
-  console.log('🔍 DEBUG: Forcing new deployment - PDF & Publish fixes included!');
-  console.log('📅 BUILD TIMESTAMP:', buildTimestamp);
-  console.log('🆔 VERSION: 2025-08-14-UX-IMPROVEMENTS-DEPLOYED');
-  console.log('⏰ LOADED AT:', new Date().toLocaleString());
-  console.log('🔧 FIXES: PDF previews + publish error resolved');
-  console.log('🚀 ========================================== 🚀');
   const { user, logout } = useAuth();
   
   const [currentView, setCurrentView] = useState('dashboard');

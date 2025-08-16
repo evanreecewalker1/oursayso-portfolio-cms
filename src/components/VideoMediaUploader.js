@@ -573,14 +573,16 @@ const VideoMediaUploader = ({
                   Clear Completed
                 </button>
               )}
-              <button 
-                className="btn-add-more"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading || (!allowMultiple && uploadQueue.length >= 1)}
-              >
-                <Upload size={16} />
-                Add More
-              </button>
+              {allowMultiple && (
+                <button 
+                  className="btn-add-more"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload size={16} />
+                  Add More
+                </button>
+              )}
             </div>
           </div>
 
