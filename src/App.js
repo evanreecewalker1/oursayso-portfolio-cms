@@ -2987,26 +2987,28 @@ const CMSApp = () => {
     return (
       <div className="cms-container">
         <div className="cms-header">
-          <button 
-            className="back-btn"
-            onClick={() => {
-              setCurrentView('dashboard');
-              resetProjectForm();
-            }}
-          >
-            ← Back to Dashboard
-          </button>
-          <div className="editor-title">
-            <h1>{editingProject ? 'Edit Project' : 'New Project'}</h1>
-            {hasUnsavedChanges && <span className="unsaved-indicator">• Unsaved changes</span>}
-          </div>
-          <div className="header-actions">
+          <div className="cms-header-content">
             <button 
-              className="btn btn-secondary"
-              onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
+              className="back-btn"
+              onClick={() => {
+                setCurrentView('dashboard');
+                resetProjectForm();
+              }}
             >
-              📈 View Dashboard
+              ← Back to Dashboard
             </button>
+            <div className="editor-title">
+              <h1>{editingProject ? 'Edit Project' : 'New Project'}</h1>
+              {hasUnsavedChanges && <span className="unsaved-indicator">• Unsaved changes</span>}
+            </div>
+            <div className="header-actions">
+              <button 
+                className="btn btn-secondary"
+                onClick={() => window.open('https://oursayso-sales-ipad.netlify.app/', '_blank')}
+              >
+                📈 View Dashboard
+              </button>
+            </div>
           </div>
         </div>
         
